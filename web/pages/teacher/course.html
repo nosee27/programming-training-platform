@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="teacher-course" data-perm="teacher:course:list" data-title="教师授课安排">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>授课安排 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-card">
+            <h2 class="jp-card__title">授课安排</h2>
+            <div id="jpToolbar"></div>
+            <div id="jpTable"></div>
+            <div id="jpPager" class="jp-pager"></div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    JP.page.list({
+        url: 'teacher-courses',
+        searchPlaceholder: '搜索教师 / 课程 / 班级',
+        toolbar: [
+            { text: '+ 安排授课', type: 'primary', perm: 'teacher:course:list', onClick: function (ctx) {
+                JP.ui.formModal({
+                    title: '新增授课安排',
+                    fields: [
+                        { key: 'teacherName', label: '教师', required: true, placeholder: '如 王建国' },
+                        { key: 'courseName', label: '课程', required: true, placeholder: '如 Python 全栈开发' },
+                        { key: 'className', label: '班级', placeholder: '如 Python 全栈 2603 班' },
+                        { key: 'term', label: '学期', placeholder: '如 2026秋' },
+                        { key: 'totalHours', label: '承担课时', type: 'number' },
+                        { key: 'roleType', label: '授课角色', type: 'select', options: [
+                            { value: '1', label: '主讲' }, { value: '2', label: '辅导' }, { value: '3', label: '班主任' }
+                        ] }
+                    ],
+                    onSubmit: function (data) {
+                        JP.page.save({
+                            url: '/teacher-courses', data: data, successText: '授课安排已保存',
+                            onDone: function () { ctx.reload(); }
+                        });
+                    }
+                });
+            } }
+        ],
+        columns: [
+            { key: 'teacherName', title: '教师' },
+            { key: 'courseName', title: '课程' },
+            { key: 'className', title: '班级' },
+            { key: 'term', title: '学期' },
+            { key: 'totalHours', title: '承担课时', align: 'center' },
+            { key: 'roleType', title: '授课角色', render: function (r) { return JP.ui.dictTag('roleType', r.roleType); } }
+        ],
+        actions: [
+            { text: '查看课表', onClick: function (row) {
+                JP.api.get('schedules', { keyword: row.className === '-' ? '' : row.className, page: 1, size: 10 }).then(function (d) {
+                    var week = { 1: '周一', 2: '周二', 3: '周三', 4: '周四', 5: '周五', 6: '周六', 7: '周日' };
+                    var rows = (d.list || []).filter(function (s) { return row.className === '-' || s.className === row.className; });
+                    JP.ui.modal({
+                        title: row.teacherName + ' · ' + row.courseName + ' 课表',
+                        body: rows.length
+                            ? rows.map(function (s) {
+                                return '<div style="padding:12px 0;border-bottom:1px solid #f2f3f6;font-size:14px">' +
+                                    '<b>' + week[s.weekday] + '</b> ' + s.lessonStart + ' - ' + s.lessonEnd +
+                                    '　<span style="color:#8a9099">' + JP.ui.esc(s.className) + ' · ' + JP.ui.esc(s.classroom) + '</span>' +
+                                    '<div style="margin-top:6px;font-size:13px;color:#666">' + JP.ui.esc(s.remark || '') + '</div></div>';
+                            }).join('')
+                            : '<div class="jp-empty">该教师暂无排课记录</div>',
+                        buttons: [{ text: '关闭' }]
+                    });
+                });
+            } }
+        ]
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="student-attendance" data-perm="student:attendance:list" data-title="学生考勤">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>学生考勤 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-card">
+            <h2 class="jp-card__title">学生考勤</h2>
+            <div id="jpToolbar"></div>
+            <div id="jpTable"></div>
+            <div id="jpPager" class="jp-pager"></div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    var listApi = JP.page.list({
+        url: 'attendances',
+        searchPlaceholder: '搜索学号 / 姓名 / 班级',
+        filters: [
+            { key: 'attendType', options: [
+                { value: '', label: '全部考勤类型' },
+                { value: '1', label: '正常' },
+                { value: '2', label: '迟到' },
+                { value: '3', label: '早退' },
+                { value: '4', label: '请假' },
+                { value: '5', label: '缺勤' }
+            ] }
+        ],
+        toolbar: [
+            { text: '+ 录入考勤', type: 'primary', perm: 'student:attendance:list', onClick: function (ctx) {
+                JP.ui.formModal({
+                    title: '录入考勤',
+                    fields: [
+                        { key: 'studentNo', label: '学号', required: true, placeholder: '如 S2026001' },
+                        { key: 'courseName', label: '课程', required: true, placeholder: '如 Python 全栈开发' },
+                        { key: 'attendDate', label: '考勤日期', type: 'date', required: true },
+                        { key: 'attendType', label: '考勤类型', type: 'select', options: [
+                            { value: '1', label: '正常' }, { value: '2', label: '迟到' },
+                            { value: '3', label: '早退' }, { value: '4', label: '请假' }, { value: '5', label: '缺勤' }
+                        ] },
+                        { key: 'checkTime', label: '打卡时间', placeholder: '如 09:02' },
+                        { key: 'remark', label: '备注', full: true, placeholder: '请假原因等' }
+                    ],
+                    onSubmit: function (data) {
+                        JP.page.save({
+                            url: '/attendances', data: data, successText: '考勤已保存',
+                            onDone: function () { ctx.reload(); }
+                        });
+                    }
+                });
+            } },
+            { text: '导出考勤', perm: 'student:attendance:list', onClick: function () { JP.ui.toast('演示模式：导出任务已创建'); } }
+        ],
+        columns: [
+            { key: 'studentNo', title: '学号' },
+            { key: 'studentName', title: '姓名' },
+            { key: 'className', title: '班级' },
+            { key: 'courseName', title: '课程' },
+            { key: 'attendDate', title: '考勤日期' },
+            { key: 'attendType', title: '考勤状态', render: function (r) { return JP.ui.dictTag('attendType', r.attendType); } },
+            { key: 'checkTime', title: '打卡时间' },
+            { key: 'remark', title: '备注', wrap: true }
+        ],
+        actions: [
+            { text: '修改状态', perm: 'student:attendance:list', onClick: function (row) {
+                JP.ui.formModal({
+                    title: '修改考勤状态 · ' + row.studentName,
+                    values: row,
+                    fields: [
+                        { key: 'attendDate', label: '考勤日期', type: 'date' },
+                        { key: 'attendType', label: '考勤状态', type: 'select', options: [
+                            { value: '1', label: '正常' }, { value: '2', label: '迟到' },
+                            { value: '3', label: '早退' }, { value: '4', label: '请假' }, { value: '5', label: '缺勤' }
+                        ] },
+                        { key: 'remark', label: '备注', full: true }
+                    ],
+                    onSubmit: function (data) {
+                        JP.page.save({
+                            url: '/attendances/' + row.id, method: 'PUT', data: data, successText: '考勤状态已更新',
+                            onDone: function () { listApi.reload(); }
+                        });
+                    }
+                });
+            } }
+        ]
+    });
+</script>
+</body>
+</html>

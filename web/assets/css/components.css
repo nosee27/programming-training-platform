@@ -1,0 +1,151 @@
+/* =====================================================================
+   业务组件样式：Tab 标签页 / 列表 / 分页器 / 工具条
+   新闻中心部分 1:1 对齐参考图
+   ===================================================================== */
+
+/* ---------------- 工具条（搜索 + 筛选 + 操作按钮） ---------------- */
+.jp-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 18px 0 14px;
+}
+.jp-toolbar__spacer { margin-left: auto; }
+.jp-toolbar .jp-input { width: 220px; }
+
+/* ---------------- Tab 标签页（新闻中心） ---------------- */
+.jp-tabs {
+    display: flex;
+    align-items: center;
+    gap: 42px;
+    margin-top: 18px;
+    border-bottom: 1px solid var(--line);
+}
+.jp-tabs__item {
+    position: relative;
+    height: 48px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 16px;
+    font-family: inherit;
+    color: #555;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+.jp-tabs__item:hover { color: var(--brand); }
+.jp-tabs__item.is-active { color: var(--brand); font-weight: 600; }
+.jp-tabs__item.is-active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 3px;
+    background: var(--brand);
+}
+
+/* ---------------- 新闻列表（标签 + 标题 + 分隔线） ---------------- */
+.jp-news-list { padding: 6px 0 0; }
+.jp-news-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 4px;
+    border-bottom: 1px solid #f2f3f6;
+    cursor: pointer;
+}
+.jp-news-item:hover .jp-news-item__title { color: var(--brand); }
+.jp-news-item__title {
+    font-size: 16px;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.jp-news-item__meta {
+    margin-left: auto;
+    flex: none;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+.jp-news-item__top { flex: none; }
+
+/* ---------------- 数据表格 ---------------- */
+.jp-table-wrap { width: 100%; overflow-x: auto; }
+.jp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+.jp-table th, .jp-table td {
+    padding: 13px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+}
+.jp-table th {
+    font-weight: 600;
+    color: var(--text-sub);
+    background: #fafbfc;
+}
+.jp-table tbody tr:hover { background: #f8fdfc; }
+.jp-table td.is-wrap { white-space: normal; min-width: 220px; }
+.jp-table__actions { display: flex; gap: 12px; }
+
+/* ---------------- 分页器（当前页青绿实心方块） ---------------- */
+.jp-pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 26px 0 6px;
+}
+.jp-pager__btn {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 8px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text-sub);
+    background: #fff;
+    border: 1px solid #e2e5ea;
+    border-radius: var(--radius);
+    cursor: pointer;
+}
+.jp-pager__btn:hover:not([disabled]):not(.is-active) {
+    color: var(--brand);
+    border-color: var(--brand-border);
+}
+.jp-pager__btn.is-active {
+    color: #fff;
+    background: var(--brand);
+    border-color: var(--brand);
+}
+.jp-pager__btn[disabled] { color: #c3c7cd; cursor: not-allowed; background: #fafbfc; }
+.jp-pager__info { margin-left: 8px; font-size: 13px; color: var(--text-muted); }
+
+/* ---------------- 分节标题（弹窗内、详情页） ---------------- */
+.jp-section-title {
+    margin: 4px 0 14px;
+    padding-left: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    border-left: 3px solid var(--brand);
+}
+
+/* ---------------- 演示数据提示条 ---------------- */
+.jp-demo-tip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding: 8px 14px;
+    font-size: 13px;
+    color: #8a6d1f;
+    background: #fff8e6;
+    border: 1px solid #f4e0ae;
+    border-radius: var(--radius);
+}

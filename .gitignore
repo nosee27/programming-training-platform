@@ -1,0 +1,24 @@
+# ===== 依赖与构建产物 =====
+node_modules/
+dist/
+
+# ===== 运行时数据 / 密钥 =====
+server/.env
+server/uploads/
+uploads/
+
+# ===== 日志与临时文件 =====
+*.log
+*.tmp
+~$*.docx
+~$*.xlsx
+
+# ===== 含个人信息（姓名/学号）的实验报告，不进入公开仓库 =====
+docs/*.docx
+
+# ===== 编辑器 / 系统 =====
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini

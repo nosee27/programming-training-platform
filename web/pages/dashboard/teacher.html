@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="tea-home" data-perm="news:list" data-title="教师工作台">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>教师工作台 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-stats" id="jpStats"></div>
+        <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px">
+            <div class="jp-card">
+                <h2 class="jp-card__title">我的授课安排</h2>
+                <div id="jpCourses"></div>
+            </div>
+            <div class="jp-card">
+                <h2 class="jp-card__title">我的课程评价</h2>
+                <div id="jpEvals"></div>
+            </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+            <div class="jp-card">
+                <h2 class="jp-card__title">我的课表</h2>
+                <div id="jpSchedule"></div>
+            </div>
+            <div class="jp-card">
+                <h2 class="jp-card__title">待点评作品</h2>
+                <div id="jpWorks"></div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    (function () {
+        var user = JP.session.user || {};
+        function safe(url, params) {
+            return JP.api.get(url, params).catch(function () { return { list: [], total: 0 }; });
+        }
+        /* 教师视角：接口已按 teacherId 收窄，只返回本人数据；不含全校经营指标（欠费、总人数） */
+        Promise.all([
+            safe('teacher-courses', { page: 1, size: 100 }),
+            safe('schedules', { page: 1, size: 100 }),
+            safe('evaluations', { page: 1, size: 100 }),
+            safe('works', { page: 1, size: 100 })
+        ]).then(function (res) {
+            var courses = res[0].list || [];
+            var schedules = res[1].list || [];
+            var evals = res[2].list || [];
+            var works = res[3].list || [];
+
+            var myClasses = {};
+            courses.forEach(function (c) { if (c.className && c.className !== '-') myClasses[c.className] = 1; });
+            var hours = courses.reduce(function (s, c) { return s + Number(c.totalHours || 0); }, 0);
+            var avg = evals.length ? Math.round(evals.reduce(function (s, e) { return s + Number(e.score); }, 0) / evals.length * 10) / 10 : 0;
+            var pending = works.filter(function (w) { return w.score === null || w.score === undefined || !w.teacherComment || w.teacherComment === '-'; });
+
+            document.getElementById('jpStats').innerHTML = [
+                { label: '我的班级', value: Object.keys(myClasses).length, unit: '个', extra: Object.keys(myClasses).join('、') || '暂无带班' },
+                { label: '承担课时', value: hours, unit: '课时', extra: '授课安排 ' + courses.length + ' 条' },
+                { label: '课程平均评分', value: avg, unit: '分', extra: '共收到 ' + evals.length + ' 条评价' },
+                { label: '待点评作品', value: pending.length, unit: '件', extra: pending.length ? '请及时点评' : '已全部点评' }
+            ].map(function (i) {
+                return '<div class="jp-stat"><div class="jp-stat__label">' + i.label + '</div>' +
+                    '<div class="jp-stat__value">' + i.value + '<small>' + i.unit + '</small></div>' +
+                    '<div style="margin-top:6px;font-size:12px;color:#8a9099">' + JP.ui.esc(i.extra) + '</div></div>';
+            }).join('');
+
+            JP.ui.table('#jpCourses', {
+                columns: [
+                    { key: 'courseName', title: '课程' },
+                    { key: 'className', title: '班级' },
+                    { key: 'term', title: '学期' },
+                    { key: 'totalHours', title: '课时', align: 'center' },
+                    { key: 'roleType', title: '角色', render: function (r) { return JP.ui.dictTag('roleType', r.roleType); } }
+                ],
+                rows: courses, empty: '暂无授课安排'
+            });
+
+            JP.ui.table('#jpEvals', {
+                columns: [
+                    { key: 'score', title: '评分', align: 'center', render: function (r) { return '<b style="color:#0e9c86">' + Number(r.score).toFixed(1) + '</b>'; } },
+                    { key: 'content', title: '评价内容', wrap: true },
+                    { key: 'evalDate', title: '日期' }
+                ],
+                rows: evals, empty: '暂无评价'
+            });
+
+            var week = { 1: '周一', 2: '周二', 3: '周三', 4: '周四', 5: '周五', 6: '周六', 7: '周日' };
+            JP.ui.table('#jpSchedule', {
+                columns: [
+                    { key: 'className', title: '班级' },
+                    { key: 'weekday', title: '时间', render: function (r) { return JP.ui.tag(week[r.weekday]) + ' ' + r.lessonStart + '-' + r.lessonEnd; } },
+                    { key: 'classroom', title: '教室' }
+                ],
+                rows: schedules, empty: '暂无排课'
+            });
+
+            JP.ui.table('#jpWorks', {
+                columns: [
+                    { key: 'studentName', title: '学员' },
+                    { key: 'title', title: '作品', wrap: true },
+                    { key: 'submitTime', title: '提交时间' }
+                ],
+                rows: pending.slice(0, 8), empty: '没有待点评的作品'
+            });
+
+            JP.ui.markDemo();
+        }).catch(function (err) { JP.ui.toast('加载失败：' + err.message, 'error'); });
+    })();
+</script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="account-profile" data-perm="" data-title="个人中心">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>个人中心 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-card">
+            <h2 class="jp-card__title">个人中心</h2>
+            <div id="jpTabs"></div>
+            <div id="jpTabBody" style="padding-top:22px;max-width:720px"></div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script>
+    (function () {
+        var user = JP.session.user || {};
+        var body = document.getElementById('jpTabBody');
+        var DEFAULT_TABS = [
+            { value: 'profile', label: '个人资料' },
+            { value: 'password', label: '修改密码' },
+            { value: 'vip', label: '会员权益' },
+            { value: 'perm', label: '我的权限' }
+        ];
+        /* 只有超级管理员（权限为通配 *）能看到演示身份切换 */
+        var isSuper = (JP.session.permissions || []).indexOf('*') > -1;
+        if (isSuper) DEFAULT_TABS.push({ value: 'demo', label: '演示身份切换' });
+
+        function render(tab) {
+            if (tab === 'profile') {
+                body.innerHTML =
+                    '<div class="jp-grid2">' +
+                    '<div class="jp-field"><label class="jp-field__label">登录账号</label><input class="jp-input" value="' + JP.ui.esc(user.username || '') + '" readonly></div>' +
+                    '<div class="jp-field"><label class="jp-field__label">姓名 / 昵称</label><input class="jp-input" id="pName" value="' + JP.ui.esc(user.name || '') + '"></div>' +
+                    '<div class="jp-field"><label class="jp-field__label">当前角色</label><input class="jp-input" value="' + JP.ui.esc(user.roleName || '') + '" readonly></div>' +
+                    '<div class="jp-field"><label class="jp-field__label">手机号</label><input class="jp-input" id="pPhone" placeholder="请输入手机号"></div>' +
+                    '<div class="jp-field jp-field--full"><label class="jp-field__label">邮箱</label><input class="jp-input" id="pEmail" placeholder="请输入邮箱"></div>' +
+                    '</div>' +
+                    '<button class="jp-btn jp-btn--primary" type="button" id="pSave">保存资料</button>';
+                document.getElementById('pSave').addEventListener('click', function () {
+                    var name = document.getElementById('pName').value.trim();
+                    if (!name) { JP.ui.toast('姓名不能为空', 'error'); return; }
+                    JP.page.save({
+                        url: '/auth/profile',
+                        method: 'PUT',
+                        data: {
+                            realName: name,
+                            phone: document.getElementById('pPhone').value.trim(),
+                            email: document.getElementById('pEmail').value.trim()
+                        },
+                        successText: '资料已保存',
+                        onDone: function () {
+                            user.name = name;
+                            localStorage.setItem('jp_user', JSON.stringify(user));
+                            JP.session.user = user;
+                            JP.layout.refresh();
+                        }
+                    });
+                });
+            } else if (tab === 'password') {
+                body.innerHTML =
+                    '<div style="max-width:420px">' +
+                    '<div class="jp-field"><label class="jp-field__label">原密码</label><input class="jp-input" type="password" id="pw0" placeholder="演示环境可留空"></div>' +
+                    '<div class="jp-field"><label class="jp-field__label">新密码</label><input class="jp-input" type="password" id="pw1" placeholder="至少 6 位"></div>' +
+                    '<div class="jp-field"><label class="jp-field__label">确认新密码</label><input class="jp-input" type="password" id="pw2" placeholder="再次输入新密码"></div>' +
+                    '<button class="jp-btn jp-btn--primary" type="button" id="pwSave">修改密码</button>' +
+                    '</div>';
+                document.getElementById('pwSave').addEventListener('click', function () {
+                    var a = document.getElementById('pw1').value;
+                    var b = document.getElementById('pw2').value;
+                    if (a.length < 6) { JP.ui.toast('新密码至少 6 位', 'error'); return; }
+                    if (a !== b) { JP.ui.toast('两次输入的新密码不一致', 'error'); return; }
+                    JP.page.save({
+                        url: '/auth/change-password',
+                        data: { oldPassword: document.getElementById('pw0').value, newPassword: a },
+                        successText: '密码修改成功'
+                    });
+                });
+            } else if (tab === 'vip') {
+                body.innerHTML =
+                    '<div class="jp-stats" style="grid-template-columns:repeat(3,1fr);margin-bottom:18px">' +
+                    '<div class="jp-stat"><div class="jp-stat__label">会员等级</div><div class="jp-stat__value">' + JP.ui.esc(user.memberLevel || '普通') + '</div></div>' +
+                    '<div class="jp-stat"><div class="jp-stat__label">到期时间</div><div class="jp-stat__value" style="font-size:20px">' + JP.ui.esc(user.expireDate || '-') + '</div></div>' +
+                    '<div class="jp-stat"><div class="jp-stat__label">剩余天数</div><div class="jp-stat__value">' + remainDays(user.expireDate) + '<small>天</small></div></div>' +
+                    '</div>' +
+                    '<div class="jp-section-title">权益清单</div>' +
+                    '<ul style="line-height:2.1;color:#666;font-size:14px">' +
+                    '<li>· 教学管理模块全部菜单（按角色权限开放）</li>' +
+                    '<li>· 学生考勤 / 缴费 / 学习档案 / 作品管理</li>' +
+                    '<li>· 课件资源上传与下载</li>' +
+                    '<li>· 编程环境、评测考试、我的题库等子系统入口</li>' +
+                    '</ul>' +
+                    '<button class="jp-btn jp-btn--primary" type="button" id="vipRenew" style="margin-top:16px">续费 / 升级</button>';
+                document.getElementById('vipRenew').addEventListener('click', function () {
+                    JP.ui.toast('续费流程可对接「订单管理」子系统');
+                });
+            } else if (tab === 'demo') {
+                var accounts = [
+                    { username: 'admin', name: '覃艳', portal: '管理端（教学管理）', icon: '🎓' },
+                    { username: 't1001', name: '王建国', portal: '教师端', icon: '👨‍🏫' },
+                    { username: 'jiaowu', name: '王教务', portal: '管理端（教务）', icon: '🗂️' },
+                    { username: 's2026001', name: '陈思远', portal: '学生端', icon: '🧑‍🎓' }
+                ];
+                body.innerHTML = '<div style="color:#8a9099;font-size:13px;line-height:1.9;margin-bottom:16px">' +
+                    '一键登录默认以管理员身份进入，登录页始终只有一个按钮（不出现账号与角色选择）。<br>' +
+                    '演示时可以在这里切换身份，直观展示「学生端 / 教师端」的菜单差异与数据范围控制。</div>' +
+                    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+                    accounts.map(function (a) {
+                        return '<button class="jp-btn" type="button" data-as="' + a.username + '" style="height:auto;padding:14px;justify-content:flex-start">' +
+                            '<span style="font-size:20px">' + a.icon + '</span>' +
+                            '<span style="text-align:left"><b>' + a.name + '</b><br>' +
+                            '<span style="font-size:12px;color:#8a9099">' + a.portal + ' · ' + a.username + '</span></span></button>';
+                    }).join('') + '</div>';
+                body.querySelectorAll('[data-as]').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        var as = btn.getAttribute('data-as');
+                        JP.api.post('auth/one-key-login?as=' + as, {}).then(function (data) {
+                            localStorage.setItem('jp_token', data.token);
+                            localStorage.setItem('jp_user', JSON.stringify(data.user || {}));
+                            localStorage.setItem('jp_permissions', JSON.stringify(data.permissions || []));
+                            localStorage.setItem('jp_subsystem', data.user.portal === 'student' ? 'student' : (data.user.portal === 'teacher' ? 'teacher' : 'teach'));
+                            JP.ui.toast('已切换为「' + data.user.name + ' / ' + data.user.roleName + '」', 'success');
+                            var HOME = { admin: '../dashboard/index.html', student: '../dashboard/student.html', teacher: '../dashboard/teacher.html' };
+                            setTimeout(function () { location.href = HOME[data.user.portal] || '../dashboard/index.html'; }, 800);
+                        }).catch(function (err) {
+                            JP.ui.toast('切换失败：' + err.message, 'error');
+                        });
+                    });
+                });
+            } else {
+                var perms = JP.session.permissions || [];
+                body.innerHTML = '<div style="color:#8a9099;font-size:13px;margin-bottom:14px">当前账号共持有 ' +
+                    perms.length + ' 项权限，菜单与按钮均按此清单渲染。</div>' +
+                    '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
+                    perms.map(function (p) {
+                        return '<span class="jp-tag" style="font-family:Consolas,monospace">' + JP.ui.esc(p) + '</span>';
+                    }).join('') + '</div>';
+            }
+        }
+
+        function remainDays(dateStr) {
+            if (!dateStr) return '-';
+            var end = new Date(String(dateStr).replace(/-/g, '/') + ' 23:59:59');
+            var diff = Math.ceil((end - new Date()) / 86400000);
+            return diff > 0 ? diff : 0;
+        }
+
+        var params = new URLSearchParams(location.search);
+        var initial = params.get('tab') || 'profile';
+        JP.ui.tabs('#jpTabs', { items: DEFAULT_TABS, active: initial, onChange: render });
+        render(initial);
+    })();
+</script>
+</body>
+</html>

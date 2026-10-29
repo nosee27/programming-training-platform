@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="score-stat" data-perm="score:stat" data-title="成绩统计">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>成绩统计 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-stats" id="jpStats"></div>
+        <div class="jp-card">
+            <h2 class="jp-card__title">分数段分布</h2>
+            <div id="jpChart" style="padding-top:24px"></div>
+        </div>
+        <div class="jp-card">
+            <h2 class="jp-card__title">按课程统计</h2>
+            <div id="jpTable" style="padding-top:8px"></div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    JP.api.get('score-stats').then(function (d) {
+        var total = d.total || 1;
+        var maxCount = Math.max.apply(null, d.buckets.map(function (b) { return b.count; }).concat([1]));
+        var courseCount = d.byCourse.length || 1;
+        var avgAll = d.byCourse.reduce(function (s, c) { return s + c.avg; }, 0) / courseCount;
+        var passAll = d.byCourse.reduce(function (s, c) { return s + c.passRate; }, 0) / courseCount;
+
+        document.getElementById('jpStats').innerHTML = [
+            { label: '成绩记录总数', value: d.total, unit: '条' },
+            { label: '统计课程数', value: d.byCourse.length, unit: '门' },
+            { label: '全部课程平均分', value: avgAll.toFixed(1), unit: '分' },
+            { label: '及格率（均值）', value: passAll.toFixed(1), unit: '%' }
+        ].map(function (i) {
+            return '<div class="jp-stat"><div class="jp-stat__label">' + i.label + '</div>' +
+                '<div class="jp-stat__value">' + i.value + '<small>' + i.unit + '</small></div></div>';
+        }).join('');
+
+        /* 纯 CSS 柱状图，不引入任何图表库 */
+        document.getElementById('jpChart').innerHTML =
+            '<div style="display:flex;align-items:flex-end;gap:40px;height:230px;padding:0 20px 0 50px;border-left:1px solid #e9ebef;border-bottom:1px solid #e9ebef">' +
+            d.buckets.map(function (b) {
+                var h = Math.round(b.count / maxCount * 170) + 6;
+                var pct = Math.round(b.count / total * 1000) / 10;
+                return '<div style="flex:1;text-align:center">' +
+                    '<div style="font-size:13px;color:#8a9099;margin-bottom:6px">' + b.count + ' 人 · ' + pct + '%</div>' +
+                    '<div style="height:' + h + 'px;background:linear-gradient(180deg,#12b39a,#0e9c86);border-radius:4px 4px 0 0"></div>' +
+                    '<div style="margin-top:8px;font-size:13px;color:#666">' + b.label + '</div></div>';
+            }).join('') + '</div>';
+
+        JP.ui.table('#jpTable', {
+            columns: [
+                { key: 'courseName', title: '课程' },
+                { key: 'count', title: '成绩条数', align: 'center' },
+                { key: 'avg', title: '平均分', align: 'center', render: function (r) { return '<b style="color:#0e9c86">' + r.avg + '</b>'; } },
+                { key: 'max', title: '最高分', align: 'center' },
+                { key: 'min', title: '最低分', align: 'center' },
+                { key: 'passRate', title: '及格率', align: 'center', render: function (r) { return r.passRate + '%'; } }
+            ],
+            rows: d.byCourse
+        });
+        JP.ui.markDemo();
+    }).catch(function (err) {
+        document.getElementById('jpChart').innerHTML = '<div class="jp-empty">统计失败：' + JP.ui.esc(err.message) + '</div>';
+    });
+</script>
+</body>
+</html>

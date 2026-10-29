@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="system-role" data-perm="system:role:list" data-title="角色管理">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>角色管理 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-card">
+            <h2 class="jp-card__title">角色管理</h2>
+            <div id="jpToolbar"></div>
+            <div id="jpTable"></div>
+            <div id="jpPager" class="jp-pager"></div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    /* 角色授权：从接口拉取全量权限 + 该角色已授权限，保存时整体替换（PUT /roles/:id/permissions） */
+    function grantModal(row) {
+        Promise.all([
+            JP.api.get('permissions', { page: 1, size: 200 }),
+            JP.api.get('roles/' + row.id + '/permissions')
+        ]).then(function (res) {
+            var list = res[0].list || [];
+            var mine = (res[1] && res[1].permissionIds ? res[1].permissionIds : []).map(String);
+            var html = '<div style="color:#8a9099;font-size:13px;margin-bottom:12px">为角色「' + JP.ui.esc(row.roleName) +
+                '」勾选可访问的权限，共 ' + list.length + ' 项（保存后立即写入数据库）</div>';
+            list.forEach(function (p) {
+                var pad = p.type === 3 ? 'padding-left:30px;' : (p.type === 2 ? 'padding-left:14px;' : '');
+                html += '<label style="display:block;padding:8px 0;border-bottom:1px solid #f2f3f6;font-size:14px;' + pad + '">' +
+                    '<input type="checkbox" value="' + p.id + '"' + (mine.indexOf(String(p.id)) > -1 ? ' checked' : '') +
+                    ' style="margin-right:8px">' + JP.ui.esc(p.permissionName) +
+                    ' <span style="color:#b0b6bd;font-size:12px">（' + JP.ui.esc(p.permissionCode) + '）</span>' +
+                    JP.ui.tag(JP.ui.dictText('permType', p.type)) + '</label>';
+            });
+            JP.ui.modal({
+                title: '角色授权 · ' + row.roleName,
+                width: 'wide',
+                body: html,
+                buttons: [
+                    { text: '取消' },
+                    { text: '保存授权', type: 'primary', onClick: function (mApi) {
+                        var ids = [];
+                        mApi.el.querySelectorAll('input[type=checkbox]').forEach(function (c) { if (c.checked) ids.push(Number(c.value)); });
+                        mApi.close();
+                        JP.page.save({
+                            url: '/roles/' + row.id + '/permissions',
+                            method: 'PUT',
+                            data: { permissionIds: ids },
+                            successText: '授权已保存，共 ' + ids.length + ' 项权限'
+                        });
+                    } }
+                ]
+            });
+        }).catch(function (err) {
+            JP.ui.toast('加载权限清单失败：' + err.message, 'error');
+        });
+    }
+
+    var listApi = JP.page.list({
+        url: 'roles',
+        searchPlaceholder: '搜索角色名称 / 编码',
+        toolbar: [
+            { text: '+ 新增角色', type: 'primary', perm: 'system:role:add', onClick: function (ctx) {
+                JP.ui.formModal({
+                    title: '新增角色',
+                    fields: [
+                        { key: 'roleName', label: '角色名称', required: true },
+                        { key: 'roleCode', label: '角色编码', required: true, placeholder: '如 ASSISTANT' },
+                        { key: 'sortOrder', label: '排序', type: 'number' },
+                        { key: 'status', label: '状态', type: 'select', options: [{ value: '1', label: '启用' }, { value: '0', label: '停用' }] },
+                        { key: 'description', label: '角色描述', type: 'textarea', full: true }
+                    ],
+                    onSubmit: function (data) {
+                        JP.page.save({
+                            url: '/roles', data: data, successText: '角色已新增',
+                            onDone: function () { ctx.reload(); }
+                        });
+                    }
+                });
+            } }
+        ],
+        columns: [
+            { key: 'roleName', title: '角色名称' },
+            { key: 'roleCode', title: '角色编码', render: function (r) { return '<code style="font-size:13px;color:#0e9c86">' + JP.ui.esc(r.roleCode) + '</code>'; } },
+            { key: 'description', title: '角色描述', wrap: true },
+            { key: 'userCount', title: '关联账号数', align: 'center' },
+            { key: 'sortOrder', title: '排序', align: 'center' },
+            { key: 'status', title: '状态', render: function (r) { return JP.ui.dictTag('enableStatus', r.status); } }
+        ],
+        actions: [
+            { text: '角色授权', perm: 'system:role:grant', onClick: function (row) { grantModal(row); } },
+            { text: '编辑', perm: 'system:role:edit', onClick: function (row) {
+                JP.ui.formModal({
+                    title: '编辑角色', values: row,
+                    fields: [
+                        { key: 'roleName', label: '角色名称', required: true },
+                        { key: 'roleCode', label: '角色编码', required: true },
+                        { key: 'sortOrder', label: '排序', type: 'number' },
+                        { key: 'status', label: '状态', type: 'select', options: [{ value: '1', label: '启用' }, { value: '0', label: '停用' }] },
+                        { key: 'description', label: '角色描述', type: 'textarea', full: true }
+                    ],
+                    onSubmit: function (data) {
+                        JP.page.save({
+                            url: '/roles/' + row.id, method: 'PUT', data: data, successText: '角色已保存',
+                            onDone: function () { listApi.reload(); }
+                        });
+                    }
+                });
+            } }
+        ]
+    });
+</script>
+</body>
+</html>

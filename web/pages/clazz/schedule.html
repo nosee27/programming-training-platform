@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="clazz-schedule" data-perm="schedule:list" data-title="课表管理">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>课表管理 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-card">
+            <h2 class="jp-card__title">课表管理</h2>
+            <div id="jpToolbar"></div>
+            <div id="jpTable"></div>
+            <div id="jpPager" class="jp-pager"></div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    var WEEK = { 1: '周一', 2: '周二', 3: '周三', 4: '周四', 5: '周五', 6: '周六', 7: '周日' };
+    var params = new URLSearchParams(location.search);
+    var presetClass = params.get('class') || '';
+
+    var listApi = JP.page.list({
+        url: 'schedules',
+        searchPlaceholder: '搜索班级 / 课程 / 教师 / 教室',
+        filters: [
+            { key: 'weekday', options: [
+                { value: '', label: '全部时间' },
+                { value: '3', label: '周三' },
+                { value: '6', label: '周六' },
+                { value: '7', label: '周日' }
+            ] }
+        ],
+        params: presetClass ? { keyword: presetClass } : {},
+        toolbar: [
+            { text: '+ 新增排课', type: 'primary', perm: 'schedule:list', onClick: function (ctx) {
+                JP.ui.formModal({
+                    title: '新增排课',
+                    fields: [
+                        { key: 'className', label: '班级', required: true },
+                        { key: 'courseName', label: '课程', required: true },
+                        { key: 'teacherName', label: '授课教师', required: true },
+                        { key: 'classroom', label: '教室' },
+                        { key: 'weekday', label: '星期', type: 'select', options: Object.keys(WEEK).map(function (k) {
+                            return { value: k, label: WEEK[k] };
+                        }) },
+                        { key: 'lessonStart', label: '上课时间', placeholder: '如 09:00' },
+                        { key: 'lessonEnd', label: '下课时间', placeholder: '如 11:00' },
+                        { key: 'term', label: '学期', placeholder: '如 2026秋' },
+                        { key: 'remark', label: '备注', full: true }
+                    ],
+                    onSubmit: function (data) {
+                        JP.page.save({
+                            url: '/schedules', data: data, successText: '排课已保存',
+                            onDone: function () { ctx.reload(); }
+                        });
+                    }
+                });
+            } },
+            { text: '周课表视图', perm: 'schedule:list', onClick: function () {
+                JP.api.get('schedules', { page: 1, size: 50 }).then(function (d) {
+                    var head = '<tr><th>时间段</th>';
+                    for (var w = 1; w <= 7; w++) head += '<th>' + WEEK[w] + '</th>';
+                    head += '</tr>';
+                    var body = '';
+                    ['09:00', '14:00'].forEach(function (slot) {
+                        body += '<tr><td>' + slot + ' 起</td>';
+                        for (var w = 1; w <= 7; w++) {
+                            var hit = (d.list || []).filter(function (s) {
+                                return String(s.weekday) === String(w) && String(s.lessonStart).indexOf(slot) === 0;
+                            })[0];
+                            body += '<td class="is-wrap">' + (hit
+                                ? '<div style="font-size:13px"><b>' + JP.ui.esc(hit.className) + '</b><br>' +
+                                  '<span style="color:#0e9c86">' + JP.ui.esc(hit.teacherName) + '</span> · ' + JP.ui.esc(hit.classroom) + '</div>'
+                                : '<span style="color:#c3c7cd">-</span>') + '</td>';
+                        }
+                        body += '</tr>';
+                    });
+                    JP.ui.modal({
+                        title: '周课表视图', width: 'wide',
+                        body: '<div class="jp-table-wrap"><table class="jp-table">' + head + body + '</table></div>',
+                        buttons: [{ text: '关闭' }]
+                    });
+                });
+            } }
+        ],
+        columns: [
+            { key: 'className', title: '班级' },
+            { key: 'courseName', title: '课程' },
+            { key: 'teacherName', title: '授课教师' },
+            { key: 'weekday', title: '上课时间', render: function (r) {
+                return '<span class="jp-tag">' + WEEK[r.weekday] + '</span> ' + r.lessonStart + ' - ' + r.lessonEnd;
+            } },
+            { key: 'classroom', title: '教室' },
+            { key: 'term', title: '学期' },
+            { key: 'remark', title: '备注', wrap: true }
+        ],
+        actions: [
+            { text: '调整时间', perm: 'schedule:list', onClick: function (row) {
+                JP.ui.formModal({
+                    title: '调整排课', values: row,
+                    fields: [
+                        { key: 'weekday', label: '星期', type: 'select', options: Object.keys(WEEK).map(function (k) {
+                            return { value: k, label: WEEK[k] };
+                        }) },
+                        { key: 'lessonStart', label: '上课时间' },
+                        { key: 'lessonEnd', label: '下课时间' },
+                        { key: 'classroom', label: '教室' },
+                        { key: 'remark', label: '备注', full: true }
+                    ],
+                    onSubmit: function (data) {
+                        JP.page.save({
+                            url: '/schedules/' + row.id, method: 'PUT', data: data, successText: '排课已调整',
+                            onDone: function () { listApi.reload(); }
+                        });
+                    }
+                });
+            } }
+        ]
+    });
+</script>
+</body>
+</html>

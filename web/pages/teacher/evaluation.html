@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="teacher-evaluation" data-perm="teacher:list" data-title="教学评价">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>教学评价 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-stats" id="jpStats"></div>
+        <div class="jp-card">
+            <h2 class="jp-card__title">教学评价</h2>
+            <div id="jpToolbar"></div>
+            <div id="jpTable"></div>
+            <div id="jpPager" class="jp-pager"></div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    JP.page.list({
+        url: 'evaluations',
+        searchPlaceholder: '搜索教师 / 学生 / 评价内容',
+        filters: [
+            { key: 'evalType', options: [
+                { value: '', label: '全部评价类型' },
+                { value: '1', label: '学生评教' },
+                { value: '2', label: '督导评教' }
+            ] }
+        ],
+        toolbar: [
+            { text: '+ 新增督导评价', type: 'primary', perm: 'teacher:list', onClick: function (ctx) {
+                JP.ui.formModal({
+                    title: '新增督导评价',
+                    values: { evalType: '2' },
+                    fields: [
+                        { key: 'teacherName', label: '被评教师', required: true },
+                        { key: 'courseName', label: '课程', required: true },
+                        { key: 'evalType', label: '评价类型', type: 'select', options: [
+                            { value: '1', label: '学生评教' }, { value: '2', label: '督导评教' }
+                        ] },
+                        { key: 'score', label: '评分（满分 10）', type: 'number', required: true },
+                        { key: 'evalDate', label: '评价日期', type: 'date' },
+                        { key: 'content', label: '评价内容', type: 'textarea', full: true }
+                    ],
+                    onSubmit: function (data) {
+                        JP.page.save({
+                            url: '/evaluations', data: data, successText: '评价已保存',
+                            onDone: function () { ctx.reload(); }
+                        });
+                    }
+                });
+            } }
+        ],
+        columns: [
+            { key: 'evalType', title: '类型', render: function (r) { return JP.ui.dictTag('evalType', r.evalType); } },
+            { key: 'teacherName', title: '被评教师' },
+            { key: 'studentName', title: '评价人' },
+            { key: 'courseName', title: '课程' },
+            { key: 'score', title: '评分', align: 'center', render: function (r) {
+                var color = r.score >= 9.5 ? '#0e9c86' : (r.score >= 9 ? '#333' : '#e08b2a');
+                return '<b style="color:' + color + '">' + Number(r.score).toFixed(1) + '</b> / 10';
+            } },
+            { key: 'content', title: '评价内容', wrap: true },
+            { key: 'evalDate', title: '评价日期' }
+        ],
+        actions: [
+            { text: '查看', onClick: function (row) {
+                JP.ui.detail('评价详情', [
+                    ['类型', JP.ui.dictTag('evalType', row.evalType)],
+                    ['被评教师', JP.ui.esc(row.teacherName)],
+                    ['评价人', JP.ui.esc(row.studentName || '-')],
+                    ['课程', JP.ui.esc(row.courseName)],
+                    ['评分', Number(row.score).toFixed(1) + ' / 10'],
+                    ['评价日期', JP.ui.esc(row.evalDate || '-')]
+                ], '<div class="jp-section-title" style="margin-top:18px">评价内容</div>' +
+                    '<div style="line-height:1.9;color:#555">' + JP.ui.esc(row.content || '-') + '</div>');
+            } }
+        ]
+    });
+
+    /* 教师评分概览 */
+    JP.api.get('evaluations', { page: 1, size: 50 }).then(function (d) {
+        var byTeacher = {};
+        (d.list || []).forEach(function (e) {
+            byTeacher[e.teacherName] = byTeacher[e.teacherName] || { sum: 0, n: 0 };
+            byTeacher[e.teacherName].sum += Number(e.score);
+            byTeacher[e.teacherName].n += 1;
+        });
+        var cards = Object.keys(byTeacher).slice(0, 3).map(function (name) {
+            return { label: name + ' · 平均评分', value: (byTeacher[name].sum / byTeacher[name].n).toFixed(1), unit: '分' };
+        });
+        cards.push({ label: '评价总条数', value: d.total, unit: '条' });
+        document.getElementById('jpStats').innerHTML = cards.map(function (c) {
+            return '<div class="jp-stat"><div class="jp-stat__label">' + JP.ui.esc(c.label) + '</div>' +
+                '<div class="jp-stat__value">' + c.value + '<small>' + c.unit + '</small></div></div>';
+        }).join('');
+    });
+</script>
+</body>
+</html>

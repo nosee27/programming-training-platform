@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="student-payment" data-perm="student:payment:list" data-title="缴费管理">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>缴费管理 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-stats" id="jpStats"></div>
+        <div class="jp-card">
+            <h2 class="jp-card__title">缴费管理</h2>
+            <div id="jpToolbar"></div>
+            <div id="jpTable"></div>
+            <div id="jpPager" class="jp-pager"></div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    var listApi = JP.page.list({
+        url: 'payments',
+        searchPlaceholder: '搜索学号 / 姓名 / 缴费单号',
+        filters: [
+            { key: 'payStatus', options: [
+                { value: '', label: '全部缴费状态' },
+                { value: '0', label: '未缴' },
+                { value: '1', label: '部分缴纳' },
+                { value: '2', label: '已缴清' },
+                { value: '3', label: '已退费' }
+            ] }
+        ],
+        toolbar: [
+            { text: '+ 新增缴费单', type: 'primary', perm: 'student:payment:list', onClick: function (ctx) {
+                JP.ui.formModal({
+                    title: '新增缴费单',
+                    fields: [
+                        { key: 'studentNo', label: '学号', required: true },
+                        { key: 'courseName', label: '课程', required: true },
+                        { key: 'payType', label: '缴费类型', type: 'select', options: [
+                            { value: '1', label: '新报名' }, { value: '2', label: '续费' }, { value: '3', label: '补费' }, { value: '4', label: '退费' }
+                        ] },
+                        { key: 'shouldAmount', label: '应收金额', type: 'number', required: true },
+                        { key: 'discountAmount', label: '优惠金额', type: 'number' },
+                        { key: 'paidAmount', label: '实收金额', type: 'number' },
+                        { key: 'payMethod', label: '缴费方式', type: 'select', options: [
+                            { value: '1', label: '微信' }, { value: '2', label: '支付宝' }, { value: '3', label: '现金' }, { value: '4', label: '银行转账' }
+                        ] },
+                        { key: 'remark', label: '备注', full: true }
+                    ],
+                    onSubmit: function (data) {
+                        JP.page.save({
+                            url: '/payments', data: data, successText: '缴费单已创建',
+                            onDone: function () { ctx.reload(); }
+                        });
+                    }
+                });
+            } },
+            { text: '导出账单', perm: 'student:payment:list', onClick: function () { JP.ui.toast('演示模式：导出任务已创建'); } }
+        ],
+        columns: [
+            { key: 'orderNo', title: '缴费单号' },
+            { key: 'studentName', title: '学生' },
+            { key: 'courseName', title: '课程' },
+            { key: 'payType', title: '类型', render: function (r) { return JP.ui.dictText('payType', r.payType); } },
+            { key: 'shouldAmount', title: '应收', render: function (r) { return JP.ui.money(r.shouldAmount); } },
+            { key: 'paidAmount', title: '实收', render: function (r) { return JP.ui.money(r.paidAmount); } },
+            { key: 'arrearsAmount', title: '欠费', render: function (r) {
+                return r.arrearsAmount > 0 ? '<span style="color:#e04b4b;font-weight:600">' + JP.ui.money(r.arrearsAmount) + '</span>' : JP.ui.money(0);
+            } },
+            { key: 'payStatus', title: '状态', render: function (r) { return JP.ui.dictTag('payStatus', r.payStatus); } },
+            { key: 'payTime', title: '缴费时间' }
+        ],
+        actions: [
+            { text: '查看明细', onClick: function (row) {
+                JP.ui.detail('缴费明细 · ' + row.orderNo, [
+                    ['学生', JP.ui.esc(row.studentName + '（' + row.studentNo + '）')],
+                    ['课程', JP.ui.esc(row.courseName)],
+                    ['缴费类型', JP.ui.dictText('payType', row.payType)],
+                    ['应收金额', JP.ui.money(row.shouldAmount)],
+                    ['优惠金额', JP.ui.money(row.discountAmount)],
+                    ['实收金额', JP.ui.money(row.paidAmount)],
+                    ['欠费金额', JP.ui.money(row.arrearsAmount)],
+                    ['缴费状态', JP.ui.dictTag('payStatus', row.payStatus)],
+                    ['缴费方式', JP.ui.dictText('payMethod', row.payMethod)],
+                    ['缴费时间', JP.ui.esc(row.payTime || '-')],
+                    ['经办人', JP.ui.esc(row.operatorName || '-')],
+                    ['备注', JP.ui.esc(row.remark || '-')]
+                ]);
+            } },
+            { text: '确认收款', perm: 'student:payment:list', onClick: function (row) {
+                if (row.arrearsAmount <= 0) { JP.ui.toast('该缴费单已缴清', 'error'); return; }
+                JP.ui.formModal({
+                    title: '确认收款 · ' + row.studentName,
+                    values: { amount: row.arrearsAmount, payMethod: '1' },
+                    fields: [
+                        { key: 'amount', label: '本次收款金额', type: 'number', required: true },
+                        { key: 'payMethod', label: '收款方式', type: 'select', options: [
+                            { value: '1', label: '微信' }, { value: '2', label: '支付宝' }, { value: '3', label: '现金' }, { value: '4', label: '银行转账' }
+                        ] },
+                        { key: 'remark', label: '备注', full: true }
+                    ],
+                    onSubmit: function (data) {
+                        JP.page.save({
+                            url: '/payments/' + row.id + '/confirm',
+                            data: { amount: data.amount, payMethod: data.payMethod, remark: data.remark },
+                            successText: '收款已记录，欠费已重新计算',
+                            onDone: function () { listApi.reload(); }
+                        });
+                    }
+                });
+            } }
+        ]
+    });
+
+    var statsBox = document.getElementById('jpStats');
+    if (!JP.session.hasPerm('dashboard:view') && statsBox) statsBox.style.display = 'none';
+    JP.api.get('stats/overview').then(function (d) {
+        document.getElementById('jpStats').innerHTML = [
+            { label: '欠费笔数', value: d.arrearsCount, unit: '笔' },
+            { label: '欠费总额', value: d.arrearsAmount.toFixed(2), unit: '元' },
+            { label: '在读学员', value: d.inClass, unit: '人' },
+            { label: '学生总数', value: d.studentTotal, unit: '人' }
+        ].map(function (i) {
+            return '<div class="jp-stat"><div class="jp-stat__label">' + i.label + '</div>' +
+                '<div class="jp-stat__value">' + i.value + '<small>' + i.unit + '</small></div></div>';
+        }).join('');
+    });
+</script>
+</body>
+</html>

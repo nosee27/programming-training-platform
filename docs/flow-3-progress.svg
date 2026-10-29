@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="660" height="470" viewBox="0 0 660 470" font-family="Microsoft YaHei,sans-serif">
+<defs><marker id="a" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#333"/></marker></defs>
+<rect width="660" height="470" fill="#fff"/>
+<text x="330" y="26" text-anchor="middle" font-size="15" font-weight="bold">图 3  学员学习进度业务流程图</text>
+<g stroke="#333" stroke-width="1.2" fill="#fff">
+<rect x="230" y="44" width="200" height="36" rx="18"/>
+<rect x="215" y="100" width="230" height="40" rx="4"/>
+<rect x="215" y="156" width="230" height="40" rx="4"/>
+<rect x="215" y="212" width="230" height="40" rx="4"/>
+<rect x="215" y="268" width="230" height="40" rx="4"/>
+<rect x="215" y="324" width="230" height="40" rx="4"/>
+<rect x="215" y="380" width="230" height="40" rx="4"/>
+<rect x="230" y="436" width="200" height="34" rx="17"/>
+</g>
+<g stroke="#333" stroke-width="1.2" fill="none" marker-end="url(#a)">
+<path d="M330 80 V98"/><path d="M330 140 V154"/><path d="M330 196 V210"/>
+<path d="M330 252 V266"/><path d="M330 308 V322"/><path d="M330 364 V378"/><path d="M330 420 V434"/>
+</g>
+<g font-size="13" text-anchor="middle" fill="#111">
+<text x="330" y="67">开始</text>
+<text x="330" y="125">课堂考勤记录（正常 / 迟到 / 请假 / 缺勤）</text>
+<text x="330" y="181">累计课时与阶段课程完成</text>
+<text x="330" y="237">阶段测评并录入成绩</text>
+<text x="330" y="293">教师填写阶段评语与能力标签</text>
+<text x="330" y="349">系统生成学习档案（阶段 / 课时 / 测评）</text>
+<text x="330" y="405">学员查看进度，教务跟进落后学员</text>
+<text x="330" y="458">结束</text>
+</g>
+</svg>

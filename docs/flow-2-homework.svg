@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="660" height="470" viewBox="0 0 660 470" font-family="Microsoft YaHei,sans-serif">
+<defs><marker id="a" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#333"/></marker></defs>
+<rect width="660" height="470" fill="#fff"/>
+<text x="330" y="26" text-anchor="middle" font-size="15" font-weight="bold">图 2  教师布置与修改（点评）作业业务流程图</text>
+<g stroke="#333" stroke-width="1.2" fill="#fff">
+<rect x="230" y="44" width="200" height="36" rx="18"/>
+<rect x="215" y="104" width="230" height="40" rx="4"/>
+<rect x="215" y="164" width="230" height="40" rx="4"/>
+<rect x="215" y="224" width="230" height="40" rx="4"/>
+<rect x="215" y="284" width="230" height="40" rx="4"/>
+<path d="M330 348 L480 378 L330 408 L180 378 Z"/>
+<rect x="215" y="422" width="230" height="38" rx="4"/>
+</g>
+<g stroke="#333" stroke-width="1.2" fill="none" marker-end="url(#a)">
+<path d="M330 80 V102"/><path d="M330 144 V162"/><path d="M330 204 V222"/>
+<path d="M330 264 V282"/><path d="M330 324 V346"/>
+<path d="M480 378 H575 V184 H447"/><text x="500" y="370" font-size="11" fill="#333">需修改</text>
+<text x="330" y="340" font-size="11" fill="#333">无需修改</text>
+</g>
+<g font-size="13" text-anchor="middle" fill="#111">
+<text x="330" y="67">开始</text>
+<text x="330" y="129">教师登录教师端 · 选择班级与课程</text>
+<text x="330" y="189">发布作业 / 作品任务与提交要求</text>
+<text x="330" y="249">学员提交作品（代码 / 文档 / 视频）</text>
+<text x="330" y="309">教师查看作品，填写点评与评分</text>
+<text x="330" y="383">学员是否需要修改</text>
+<text x="330" y="446">系统记录并通知学员 · 结束</text>
+</g>
+</svg>

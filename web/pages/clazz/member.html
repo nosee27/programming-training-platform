@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="clazz-member" data-perm="student:basic:list" data-title="班级成员">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>班级成员 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-card">
+            <h2 class="jp-card__title">班级成员</h2>
+            <div id="jpToolbar"></div>
+            <div id="jpTable"></div>
+            <div id="jpPager" class="jp-pager"></div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    var params = new URLSearchParams(location.search);
+    var presetClass = params.get('class') || '';
+
+    JP.page.list({
+        url: 'students',
+        searchPlaceholder: '搜索学号 / 姓名',
+        filters: [
+            { key: 'className', options: [
+                { value: '', label: '全部班级' },
+                { value: 'Python 全栈 2603 班', label: 'Python 全栈 2603 班' },
+                { value: '算法竞赛 2601 班', label: '算法竞赛 2601 班' },
+                { value: '-', label: '未分班' }
+            ] }
+        ],
+        params: presetClass ? { className: presetClass } : {},
+        toolbar: [
+            { text: '导出名单', perm: 'student:basic:export', onClick: function () { JP.ui.toast('演示模式：导出任务已创建'); } }
+        ],
+        columns: [
+            { key: 'studentNo', title: '学号' },
+            { key: 'name', title: '姓名' },
+            { key: 'gender', title: '性别', render: function (r) { return JP.ui.dictText('gender', r.gender); } },
+            { key: 'className', title: '班级' },
+            { key: 'phone', title: '联系电话' },
+            { key: 'guardianName', title: '监护人' },
+            { key: 'guardianPhone', title: '监护电话' },
+            { key: 'status', title: '状态', render: function (r) { return JP.ui.dictTag('studentStatus', r.status); } }
+        ],
+        actions: [
+            { text: '查看档案', onClick: function (row) { location.href = '../student/archive.html'; } },
+            { text: '查看考勤', onClick: function (row) { location.href = '../student/attendance.html'; } }
+        ]
+    });
+</script>
+</body>
+</html>

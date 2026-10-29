@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="courseware-list" data-perm="courseware:list" data-title="课件列表">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>课件列表 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-card">
+            <h2 class="jp-card__title">课件列表</h2>
+            <div id="jpToolbar"></div>
+            <div id="jpTable"></div>
+            <div id="jpPager" class="jp-pager"></div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    var TYPE_COLOR = { pdf: 'red', pptx: 'orange', zip: 'gray', mp4: 'blue' };
+
+    /* 上传课件：选文件 → POST /uploads/courseware（multipart）→ POST /coursewares 落库 */
+    function uploadModal(ctx) {
+        var body =
+            '<div class="jp-field"><label class="jp-field__label">课件名称<span class="req">*</span></label>' +
+            '<input class="jp-input" id="uTitle" placeholder="如 Python 基础语法课件"></div>' +
+            '<div class="jp-grid2">' +
+            '<div class="jp-field"><label class="jp-field__label">关联课程</label>' +
+            '<input class="jp-input" id="uCourse" placeholder="如 Python 全栈开发"></div>' +
+            '<div class="jp-field"><label class="jp-field__label">课件分类</label>' +
+            '<select class="jp-select" id="uCategory">' +
+            ['课件讲义', '练习题库', '源码素材', '复习资料', '课堂录屏'].map(function (c) {
+                return '<option value="' + c + '">' + c + '</option>';
+            }).join('') + '</select></div>' +
+            '</div>' +
+            '<div class="jp-field"><label class="jp-field__label">选择文件</label>' +
+            '<input class="jp-input" type="file" id="uFile"></div>' +
+            '<div style="font-size:12px;color:#8a9099">支持 PDF / PPTX / ZIP / MP4，单文件最大 200MB（由后端 multer 限制）。</div>';
+
+        JP.ui.modal({
+            title: '上传课件',
+            body: body,
+            buttons: [
+                { text: '取消' },
+                { text: '开始上传', type: 'primary', onClick: function (m) {
+                    var title = document.getElementById('uTitle').value.trim();
+                    var file = document.getElementById('uFile').files[0];
+                    if (!title) { JP.ui.toast('请填写课件名称', 'error'); return; }
+                    if (!file) { JP.ui.toast('请选择要上传的文件', 'error'); return; }
+
+                    var fd = new FormData();
+                    fd.append('file', file);
+                    fetch(JP_CONFIG.apiBase + '/uploads/courseware', {
+                        method: 'POST',
+                        headers: { Authorization: 'Bearer ' + localStorage.getItem('jp_token') },
+                        body: fd
+                    }).then(function (r) { return r.json(); }).then(function (res) {
+                        if (res.code !== 0) throw new Error(res.message);
+                        m.close();
+                        return JP.page.save({
+                            url: '/coursewares',
+                            data: {
+                                title: title,
+                                courseName: document.getElementById('uCourse').value.trim(),
+                                category: document.getElementById('uCategory').value,
+                                fileUrl: res.data.fileUrl,
+                                fileType: res.data.fileType,
+                                fileSize: res.data.fileSize
+                            },
+                            successText: '课件已上传',
+                            onDone: function () { ctx.reload(); }
+                        });
+                    }).catch(function (err) {
+                        JP.ui.toast('上传失败：' + err.message + '（后端未启动时无法上传文件）', 'error');
+                    });
+                } }
+            ]
+        });
+    }
+
+    var listApi = JP.page.list({
+        url: 'coursewares',
+        searchPlaceholder: '搜索课件名称 / 课程 / 上传人',
+        filters: [
+            { key: 'categoryName', options: [
+                { value: '', label: '全部分类' },
+                { value: '课件讲义', label: '课件讲义' },
+                { value: '练习题库', label: '练习题库' },
+                { value: '源码素材', label: '源码素材' },
+                { value: '复习资料', label: '复习资料' },
+                { value: '课堂录屏', label: '课堂录屏' }
+            ] }
+        ],
+        toolbar: [
+            { text: '+ 上传课件', type: 'primary', perm: 'courseware:upload', onClick: function (ctx) { uploadModal(ctx); } },
+            { text: '批量下载', perm: 'courseware:download', onClick: function () { JP.ui.toast('演示模式：批量下载任务已创建'); } }
+        ],
+        columns: [
+            { key: 'title', title: '课件名称', wrap: true },
+            { key: 'courseName', title: '关联课程' },
+            { key: 'categoryName', title: '分类', render: function (r) { return JP.ui.tag(r.categoryName); } },
+            { key: 'fileType', title: '类型', render: function (r) {
+                return JP.ui.tag(String(r.fileType).toUpperCase(), TYPE_COLOR[r.fileType] || 'gray');
+            } },
+            { key: 'fileSizeText', title: '大小', align: 'center' },
+            { key: 'uploaderName', title: '上传人' },
+            { key: 'downloadCount', title: '下载次数', align: 'center' },
+            { key: 'createTime', title: '上传时间' }
+        ],
+        actions: [
+            { text: '下载', perm: 'courseware:download', onClick: function (row) {
+                JP.page.save({
+                    url: '/coursewares/' + row.id + '/download',
+                    successText: '开始下载「' + row.title + '」',
+                    onDone: function () {
+                        if (row.fileUrl && row.fileUrl.indexOf('/') === 0) location.href = location.origin + row.fileUrl;
+                        listApi.reload();
+                    }
+                });
+            } },
+            { text: '预览', onClick: function (row) {
+                JP.ui.detail('课件详情 · ' + row.title, [
+                    ['课件名称', JP.ui.esc(row.title)],
+                    ['关联课程', JP.ui.esc(row.courseName)],
+                    ['课件分类', JP.ui.esc(row.categoryName)],
+                    ['文件类型', JP.ui.esc(String(row.fileType).toUpperCase())],
+                    ['文件大小', JP.ui.esc(row.fileSizeText)],
+                    ['上传人', JP.ui.esc(row.uploaderName)],
+                    ['下载次数', JP.ui.esc(row.downloadCount)],
+                    ['上传时间', JP.ui.esc(row.createTime)]
+                ]);
+            } },
+            { text: '删除', perm: 'courseware:delete', onClick: function (row) {
+                JP.ui.confirm({
+                    title: '删除课件', message: '确定删除课件「' + row.title + '」吗？',
+                onOk: function () {
+                    JP.page.save({
+                        url: '/coursewares/' + row.id, method: 'DELETE', successText: '课件已删除',
+                        onDone: function () { listApi.reload(); }
+                    });
+                }
+                });
+            } }
+        ]
+    });
+</script>
+</body>
+</html>

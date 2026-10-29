@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="system-user" data-perm="system:user:list" data-title="用户管理">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>用户管理 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-card">
+            <h2 class="jp-card__title">用户管理</h2>
+            <div id="jpToolbar"></div>
+            <div id="jpTable"></div>
+            <div id="jpPager" class="jp-pager"></div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    var ROLE_OPTIONS = [
+        { value: '1', label: '超级管理员' },
+        { value: '2', label: '教务管理员' },
+        { value: '3', label: '教师' },
+        { value: '4', label: '学生' }
+    ];
+
+    function userForm(row, reload) {
+        JP.ui.formModal({
+            title: row ? '编辑用户' : '新增用户',
+            values: row ? Object.assign({}, row, { roleIds: String(row.roleIds || '').split(',')[0] }) : { status: '1', memberLevel: 'VIP' },
+            fields: [
+                { key: 'username', label: '登录账号', required: !row, placeholder: '如 t1003' },
+                { key: 'realName', label: '姓名 / 昵称', required: true },
+                { key: 'phone', label: '手机号' },
+                { key: 'roleIds', label: '归属角色', type: 'select', options: [{ value: '', label: '请选择角色' }].concat(ROLE_OPTIONS.map(function (r) {
+                    return { value: r.value, label: r.label };
+                })) },
+                { key: 'memberLevel', label: '会员等级', type: 'select', options: [
+                    { value: 'VIP', label: 'VIP' }, { value: '普通', label: '普通' }
+                ] },
+                { key: 'expireDate', label: '会员到期时间', type: 'date' },
+                { key: 'status', label: '状态', type: 'select', options: [
+                    { value: '1', label: '启用' }, { value: '0', label: '禁用' }
+                ] },
+                { key: 'remark', label: '备注', full: true }
+            ],
+            onSubmit: function (data) {
+                /* 角色不是 sys_admin 的字段，必须走专用接口 PUT /users/:id/roles 单独保存 */
+                var roleIds = data.roleIds ? [Number(data.roleIds)] : [];
+                delete data.roleIds;
+                JP.page.save({
+                    url: row ? '/users/' + row.id : '/users',
+                    method: row ? 'PUT' : 'POST',
+                    data: data,
+                    successText: row ? '用户信息已保存' : '用户已新增',
+                    onDone: function (saved) {
+                        var uid = row ? row.id : (saved && saved.id);
+                        var done = function () { if (reload) reload(); };
+                        if (uid && roleIds.length) {
+                            JP.page.save({
+                                url: '/users/' + uid + '/roles',
+                                method: 'PUT',
+                                data: { roleIds: roleIds },
+                                successText: '归属角色已更新',
+                                onDone: done
+                            });
+                        } else { done(); }
+                    }
+                });
+            }
+        });
+    }
+
+    var listApi;
+
+    listApi = JP.page.list({
+        url: 'users',
+        searchPlaceholder: '搜索账号 / 姓名 / 手机号',
+        toolbar: [
+            { text: '+ 新增用户', type: 'primary', perm: 'system:user:add', onClick: function (ctx) { userForm(null, ctx.reload); } },
+            { text: '导出用户', perm: 'system:user:list', onClick: function () { JP.ui.toast('演示模式：导出任务已创建（对接后可下载 Excel）'); } }
+        ],
+        columns: [
+            { key: 'username', title: '登录账号' },
+            { key: 'realName', title: '姓名 / 昵称' },
+            { key: 'phone', title: '手机号' },
+            { key: 'roleNames', title: '归属角色', render: function (r) { return JP.ui.tag(r.roleNames); } },
+            { key: 'memberLevel', title: '会员等级', render: function (r) { return JP.ui.tag(r.memberLevel, r.memberLevel === 'VIP' ? 'orange' : 'gray'); } },
+            { key: 'expireDate', title: '到期时间' },
+            { key: 'status', title: '状态', render: function (r) { return JP.ui.dictTag('enableStatus', r.status); } },
+            { key: 'lastLoginTime', title: '最后登录' }
+        ],
+        actions: [
+            { text: '编辑', perm: 'system:user:edit', onClick: function (row) { userForm(row, function () { listApi.reload(); }); } },
+            { text: '重置密码', perm: 'system:user:reset', onClick: function (row) {
+                JP.ui.formModal({
+                    title: '重置密码 · ' + row.realName,
+                    values: { password: '123456' },
+                    fields: [{ key: 'password', label: '新密码', required: true, full: true, placeholder: '至少 6 位' }],
+                    onSubmit: function (data) {
+                        JP.page.save({
+                            url: '/users/' + row.id + '/reset-password',
+                            data: data,
+                            successText: '密码已重置',
+                            onDone: function () { listApi.reload(); }
+                        });
+                    }
+                });
+            } },
+            { text: '删除', perm: 'system:user:delete', onClick: function (row, i, ctx) {
+                JP.ui.confirm({
+                    title: '删除用户', message: '确定删除用户「' + row.realName + '」吗？',
+                    onOk: function () {
+                        JP.page.save({
+                            url: '/users/' + row.id,
+                            method: 'DELETE',
+                            successText: '用户已删除',
+                            onDone: function () { listApi.reload(); }
+                        });
+                    }
+                });
+            } }
+        ]
+    });
+</script>
+</body>
+</html>

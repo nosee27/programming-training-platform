@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="student-works" data-perm="student:work:list" data-title="学生作品">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>学生作品 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-card">
+            <h2 class="jp-card__title">学生作品</h2>
+            <div id="jpToolbar"></div>
+            <div id="jpTable"></div>
+            <div id="jpPager" class="jp-pager"></div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    function commentModal(row) {
+        JP.ui.formModal({
+            title: '作品点评 · ' + row.title,
+            values: { score: row.score || '', teacherComment: row.teacherComment === '-' ? '' : row.teacherComment },
+            fields: [
+                { key: 'score', label: '作品评分（满分 100）', type: 'number' },
+                { key: 'teacherComment', label: '教师点评', type: 'textarea', full: true, placeholder: '请填写点评意见' }
+            ],
+            onSubmit: function (data) {
+                JP.page.save({
+                    url: '/works/' + row.id + '/comment', data: data, successText: '点评已保存',
+                    onDone: function () { if (listApi) listApi.reload(); }
+                });
+            }
+        });
+    }
+
+    var listApi = JP.page.list({
+        url: 'works',
+        searchPlaceholder: '搜索学号 / 姓名 / 作品名称',
+        filters: [
+            { key: 'workType', options: [
+                { value: '', label: '全部作品类型' },
+                { value: '1', label: '代码项目' },
+                { value: '2', label: '设计稿' },
+                { value: '3', label: '文档' },
+                { value: '4', label: '视频' }
+            ] }
+        ],
+        toolbar: [
+            { text: '+ 登记作品', type: 'primary', perm: 'student:work:list', onClick: function (ctx) {
+                JP.ui.formModal({
+                    title: '登记学生作品',
+                    fields: [
+                        { key: 'studentNo', label: '学号', required: true },
+                        { key: 'title', label: '作品名称', required: true },
+                        { key: 'courseName', label: '所属课程' },
+                        { key: 'workType', label: '作品类型', type: 'select', options: [
+                            { value: '1', label: '代码项目' }, { value: '2', label: '设计稿' }, { value: '3', label: '文档' }, { value: '4', label: '视频' }
+                        ] },
+                        { key: 'fileUrl', label: '作品地址', full: true, placeholder: '仓库地址或文件链接' },
+                        { key: 'description', label: '作品说明', type: 'textarea', full: true }
+                    ],
+                    onSubmit: function (data) {
+                        JP.page.save({
+                            url: '/works', data: data, successText: '作品已登记',
+                            onDone: function () { ctx.reload(); }
+                        });
+                    }
+                });
+            } },
+            { text: '作品墙', perm: 'student:work:list', onClick: function () { JP.ui.toast('演示模式：作品墙页面待迭代补充'); } }
+        ],
+        columns: [
+            { key: 'studentNo', title: '学号' },
+            { key: 'studentName', title: '姓名' },
+            { key: 'title', title: '作品名称', wrap: true },
+            { key: 'workType', title: '类型', render: function (r) { return JP.ui.tag(JP.ui.dictText('workType', r.workType)); } },
+            { key: 'courseName', title: '所属课程' },
+            { key: 'score', title: '评分', align: 'center', render: function (r) {
+                return r.score === null || r.score === undefined ? '<span class="jp-tag jp-tag--orange">待点评</span>' : '<b>' + r.score + '</b>';
+            } },
+            { key: 'isPublic', title: '展示', render: function (r) { return JP.ui.dictTag('publicFlag', r.isPublic); } },
+            { key: 'submitTime', title: '提交时间' }
+        ],
+        actions: [
+            { text: '查看', onClick: function (row) {
+                JP.ui.detail('作品详情 · ' + row.title, [
+                    ['学生', JP.ui.esc(row.studentName + '（' + row.studentNo + '）')],
+                    ['所属课程', JP.ui.esc(row.courseName)],
+                    ['作品类型', JP.ui.dictText('workType', row.workType)],
+                    ['作品评分', row.score === null ? '待点评' : row.score],
+                    ['是否公开', JP.ui.dictTag('publicFlag', row.isPublic)],
+                    ['提交时间', JP.ui.esc(row.submitTime || '-')],
+                    ['作品说明', JP.ui.esc(row.description || '-')],
+                    ['教师点评', JP.ui.esc(row.teacherComment || '-')]
+                ]);
+            } },
+            { text: '点评', perm: 'student:work:list', onClick: function (row) { commentModal(row); } }
+        ]
+    });
+</script>
+</body>
+</html>

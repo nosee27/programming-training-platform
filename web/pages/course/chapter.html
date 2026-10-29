@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="course-chapter" data-perm="course:chapter:list" data-title="课程大纲">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>课程大纲 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-card">
+            <h2 class="jp-card__title">课程大纲</h2>
+            <div id="jpToolbar"></div>
+            <div id="jpTable"></div>
+            <div id="jpPager" class="jp-pager"></div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    var params = new URLSearchParams(location.search);
+    var presetCourse = params.get('course') || '';
+
+    var listApi = JP.page.list({
+        url: 'course-chapters',
+        params: presetCourse ? { courseName: presetCourse } : {},
+        searchPlaceholder: '搜索课程 / 章节名称',
+        filters: [
+            { key: 'courseName', options: [
+                { value: '', label: '全部课程' },
+                { value: 'Python 全栈开发', label: 'Python 全栈开发' },
+                { value: '算法与程序设计竞赛', label: '算法与程序设计竞赛' },
+                { value: '前端开发实战', label: '前端开发实战' }
+            ] }
+        ],
+        toolbar: [
+            { text: '+ 新增章节', type: 'primary', perm: 'course:edit', onClick: function (ctx) {
+                JP.ui.formModal({
+                    title: '新增章节',
+                    fields: [
+                        { key: 'courseName', label: '所属课程', required: true },
+                        { key: 'chapterName', label: '章节名称', required: true, placeholder: '如 第二章 面向对象' },
+                        { key: 'parentName', label: '父章节', placeholder: '留空表示「章」' },
+                        { key: 'hours', label: '课时数', type: 'number' },
+                        { key: 'sortOrder', label: '排序', type: 'number' },
+                        { key: 'content', label: '知识点说明', type: 'textarea', full: true }
+                    ],
+                    onSubmit: function (data) {
+                        JP.page.save({
+                            url: '/course-chapters', data: data, successText: '章节已新增',
+                            onDone: function () { ctx.reload(); }
+                        });
+                    }
+                });
+            } }
+        ],
+        columns: [
+            { key: 'courseName', title: '课程' },
+            { key: 'parentName', title: '父章节', render: function (r) {
+                return r.parentName === '-' ? '<span class="jp-tag jp-tag--orange">章</span>' : JP.ui.esc(r.parentName);
+            } },
+            { key: 'chapterName', title: '章节名称' },
+            { key: 'hours', title: '课时数', align: 'center' },
+            { key: 'sortOrder', title: '排序', align: 'center' },
+            { key: 'content', title: '知识点说明', wrap: true }
+        ],
+        actions: [
+            { text: '编辑', perm: 'course:edit', onClick: function (row) {
+                JP.ui.formModal({
+                    title: '编辑章节', values: row,
+                    fields: [
+                        { key: 'chapterName', label: '章节名称', required: true },
+                        { key: 'hours', label: '课时数', type: 'number' },
+                        { key: 'sortOrder', label: '排序', type: 'number' },
+                        { key: 'content', label: '知识点说明', type: 'textarea', full: true }
+                    ],
+                    onSubmit: function (data) {
+                        JP.page.save({
+                            url: '/course-chapters/' + row.id, method: 'PUT', data: data, successText: '章节已保存',
+                            onDone: function () { listApi.reload(); }
+                        });
+                    }
+                });
+            } }
+        ]
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="news" data-perm="news:list" data-title="新闻中心">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>新闻中心 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-card">
+            <div style="display:flex;align-items:center">
+                <h2 class="jp-card__title">新闻中心</h2>
+                <span style="margin-left:auto"></span>
+                <input class="jp-input" id="jpKeyword" placeholder="搜索标题 / 来源" style="width:200px;margin-right:10px">
+                <button class="jp-btn jp-btn--primary" type="button" id="jpPublish">发布新闻</button>
+            </div>
+
+            <!-- Tab 标签页：全部 / 平台公告 / 行业资讯 / 赛事动态 -->
+            <div id="jpTabs"></div>
+
+            <div class="jp-news-list" id="jpList"></div>
+            <div class="jp-pager" id="jpPager"></div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    (function () {
+        var state = { category: 'all', page: 1, size: 5, keyword: '' };
+        var TABS = [
+            { value: 'all', label: '全部' },
+            { value: 'notice', label: '平台公告' },
+            { value: 'industry', label: '行业资讯' },
+            { value: 'match', label: '赛事动态' }
+        ];
+
+        JP.ui.tabs('#jpTabs', {
+            items: TABS, active: 'all',
+            onChange: function (v) { state.category = v; state.page = 1; load(); }
+        });
+
+        /* 发布按钮：按权限显隐 */
+        var publishBtn = document.getElementById('jpPublish');
+        if (!JP.session.hasPerm('news:add')) publishBtn.style.display = 'none';
+        publishBtn.addEventListener('click', function () {
+            JP.ui.formModal({
+                title: '发布新闻',
+                fields: [
+                    { key: 'title', label: '新闻标题', required: true, full: true, placeholder: '请输入标题' },
+                    { key: 'categoryCode', label: '所属分类', type: 'select', required: true, options: [
+                        { value: 'notice', label: '平台公告' },
+                        { value: 'industry', label: '行业资讯' },
+                        { value: 'match', label: '赛事动态' }
+                    ] },
+                    { key: 'author', label: '作者', placeholder: '如：江京教育' },
+                    { key: 'source', label: '来源', placeholder: '如：教务处' },
+                    { key: 'summary', label: '摘要', type: 'textarea', full: true, placeholder: '一句话摘要' }
+                ],
+                onSubmit: function (data) {
+                    JP.page.save({
+                        url: '/news',
+                        data: data,
+                        successText: '新闻已发布',
+                        onDone: function () { state.page = 1; load(); }
+                    });
+                }
+            });
+        });
+
+        document.getElementById('jpKeyword').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { state.keyword = this.value.trim(); state.page = 1; load(); }
+        });
+
+        /* 按权限生成行内操作按钮 */
+        function actionsFor(n, i) {
+            var html = '';
+            if (JP.session.hasPerm('news:edit')) html += '<button class="jp-btn jp-btn--text" data-act="edit" data-i="' + i + '">编辑</button>';
+            if (JP.session.hasPerm('news:top')) html += '<button class="jp-btn jp-btn--text" data-act="top" data-i="' + i + '">' + (n.isTop ? '取消置顶' : '置顶') + '</button>';
+            if (JP.session.hasPerm('news:edit')) html += '<button class="jp-btn jp-btn--text" data-act="status" data-i="' + i + '">' + (n.status === 1 ? '下线' : '重新发布') + '</button>';
+            if (JP.session.hasPerm('news:delete')) html += '<button class="jp-btn jp-btn--text" data-act="del" data-i="' + i + '" style="color:#e04b4b">删除</button>';
+            return html;
+        }
+
+        function load() {
+            document.getElementById('jpList').innerHTML = '<div class="jp-loading">数据加载中…</div>';
+            JP.api.get('news', { category: state.category, page: state.page, size: state.size, keyword: state.keyword })
+                .then(function (d) {
+                    var rows = d.list || [];
+                    var listEl = document.getElementById('jpList');
+                    if (!rows.length) {
+                        listEl.innerHTML = '<div class="jp-empty"><span class="jp-empty__icon">📭</span>该分类下暂无新闻</div>';
+                    } else {
+                        listEl.innerHTML = rows.map(function (n, i) {
+                            return '<div class="jp-news-item" data-index="' + i + '">' +
+                                '<span class="jp-news-item__top">' + JP.ui.tag(n.categoryName) + '</span>' +
+                                (n.isTop ? '<span class="jp-news-item__top">' + JP.ui.tag('置顶', 'orange') + '</span>' : '') +
+                                '<span class="jp-news-item__title">' + JP.ui.esc(n.title) + '</span>' +
+                                '<span class="jp-news-item__meta">' + JP.ui.esc(n.publishTime || '') + ' · 浏览 ' + (n.viewCount || 0) + '</span>' +
+                                '<span class="jp-news-item__meta" style="display:flex;gap:10px">' + actionsFor(n, i) + '</span>' +
+                                '</div>';
+                        }).join('');
+                        listEl.querySelectorAll('.jp-news-item').forEach(function (el) {
+                            el.addEventListener('click', function () {
+                                if (window.event && window.event.target && window.event.target.getAttribute('data-act')) return;
+                                var n = rows[parseInt(el.getAttribute('data-index'), 10)];
+                                if (!n) return;
+                                JP.ui.detail(n.title, [
+                                    ['所属分类', JP.ui.tag(n.categoryName)],
+                                    ['作者 / 来源', JP.ui.esc((n.author || '-') + ' / ' + (n.source || '-'))],
+                                    ['发布时间', JP.ui.esc(n.publishTime || '-')],
+                                    ['浏览量', JP.ui.esc(n.viewCount || 0)],
+                                    ['摘要', JP.ui.esc(n.summary || '-')]
+                                ], '<div class="jp-section-title" style="margin-top:18px">正文</div>' +
+                                    '<div style="line-height:1.9;color:#555;font-size:14px">' + JP.ui.esc(n.summary || '（正文内容以接口返回为准）') + '</div>');
+                            });
+                        });
+                        /* 行内操作：编辑 / 置顶 / 下线 / 删除（后端接口均已具备） */
+                        listEl.querySelectorAll('[data-act]').forEach(function (btn) {
+                            btn.addEventListener('click', function (e) {
+                                e.stopPropagation();
+                                var n = rows[Number(btn.getAttribute('data-i'))];
+                                var act = btn.getAttribute('data-act');
+                                if (act === 'top') {
+                                    JP.page.save({ url: '/news/' + n.id + '/top', method: 'PUT', data: { isTop: n.isTop ? 0 : 1 }, successText: n.isTop ? '已取消置顶' : '已置顶', onDone: load });
+                                } else if (act === 'status') {
+                                    var next = n.status === 1 ? 2 : 1;
+                                    JP.page.save({ url: '/news/' + n.id + '/status', method: 'PUT', data: { status: next }, successText: next === 1 ? '已重新发布' : '已下线', onDone: load });
+                                } else if (act === 'edit') {
+                                    JP.ui.formModal({
+                                        title: '编辑新闻', values: { title: n.title, categoryCode: n.categoryCode, author: n.author, source: n.source, summary: n.summary },
+                                        fields: [
+                                            { key: 'title', label: '新闻标题', required: true, full: true },
+                                            { key: 'categoryCode', label: '所属分类', type: 'select', options: TABS.filter(function (t) { return t.value !== 'all'; }) },
+                                            { key: 'author', label: '作者' },
+                                            { key: 'source', label: '来源' },
+                                            { key: 'summary', label: '摘要', type: 'textarea', full: true }
+                                        ],
+                                        onSubmit: function (data) {
+                                            JP.page.save({ url: '/news/' + n.id, method: 'PUT', data: data, successText: '新闻已保存', onDone: load });
+                                        }
+                                    });
+                                } else if (act === 'del') {
+                                    JP.ui.confirm({ title: '删除新闻', message: '确定删除「' + n.title + '」吗？', onOk: function () {
+                                        JP.page.save({ url: '/news/' + n.id, method: 'DELETE', successText: '新闻已删除', onDone: load });
+                                    } });
+                                }
+                            });
+                        });
+                    }
+                    JP.ui.pagination('#jpPager', {
+                        total: d.total, page: state.page, size: state.size,
+                        onChange: function (p) { state.page = p; load(); }
+                    });
+                    JP.ui.markDemo();
+                });
+        }
+
+        load();
+    })();
+</script>
+</body>
+</html>

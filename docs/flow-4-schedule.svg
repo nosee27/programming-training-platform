@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="660" height="470" viewBox="0 0 660 470" font-family="Microsoft YaHei,sans-serif">
+<defs><marker id="a" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#333"/></marker></defs>
+<rect width="660" height="470" fill="#fff"/>
+<text x="330" y="26" text-anchor="middle" font-size="15" font-weight="bold">图 4  教务排课与班级管理业务流程图</text>
+<g stroke="#333" stroke-width="1.2" fill="#fff">
+<rect x="230" y="44" width="200" height="36" rx="18"/>
+<rect x="215" y="100" width="230" height="40" rx="4"/>
+<rect x="215" y="156" width="230" height="40" rx="4"/>
+<rect x="215" y="212" width="230" height="40" rx="4"/>
+<path d="M330 276 L480 306 L330 336 L180 306 Z"/>
+<rect x="215" y="360" width="230" height="40" rx="4"/>
+<rect x="230" y="426" width="200" height="34" rx="17"/>
+</g>
+<g stroke="#333" stroke-width="1.2" fill="none" marker-end="url(#a)">
+<path d="M330 80 V98"/><path d="M330 140 V154"/><path d="M330 196 V210"/><path d="M330 252 V274"/>
+<path d="M330 336 V358"/><path d="M330 400 V424"/>
+<path d="M480 306 H575 V232 H447"/><text x="505" y="298" font-size="11" fill="#333">冲突</text>
+<text x="330" y="268" font-size="11" fill="#333">无冲突</text>
+</g>
+<g font-size="13" text-anchor="middle" fill="#111">
+<text x="330" y="67">开始</text>
+<text x="330" y="125">教务登录管理端 · 新建 / 维护课程</text>
+<text x="330" y="181">开设班级，指定班主任、教室与人数</text>
+<text x="330" y="237">安排课表（星期 / 时段 / 教室 / 教师）</text>
+<text x="330" y="311">时间与教室冲突校验</text>
+<text x="330" y="385">学员分班并发布课表（学员端 / 教师端可见）</text>
+<text x="330" y="448">结束</text>
+</g>
+<text x="30" y="30" font-size="11" fill="#777">检测到冲突 → 返回调整时间或教室</text>
+</svg>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="dashboard" data-perm="dashboard:view" data-title="工作台">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>工作台 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-stats" id="jpStats"></div>
+
+        <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px" id="jpRow">
+            <div class="jp-card">
+                <h2 class="jp-card__title">最新动态</h2>
+                <div class="jp-news-list" id="jpNews"></div>
+            </div>
+            <div class="jp-card">
+                <h2 class="jp-card__title">待办提醒</h2>
+                <div id="jpTodos"></div>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px" id="jpRow2">
+            <div class="jp-card">
+                <h2 class="jp-card__title">本期课表（前 5 条）</h2>
+                <div id="jpSchedule"></div>
+            </div>
+            <div class="jp-card">
+                <h2 class="jp-card__title">快捷入口</h2>
+                <div id="jpQuick" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding-top:14px"></div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    (function () {
+        var ROOT = '../../';
+
+        /* 数据概览 */
+        JP.api.get('stats/overview').then(function (d) {
+            var items = [
+                { label: '学生总数', value: d.studentTotal, unit: '人' },
+                { label: '在读学员', value: d.inClass, unit: '人' },
+                { label: '欠费笔数', value: d.arrearsCount, unit: '笔', extra: '合计 ¥' + d.arrearsAmount.toFixed(2) },
+                { label: '测评平均分', value: d.avgScore, unit: '分' }
+            ];
+            document.getElementById('jpStats').innerHTML = items.map(function (i) {
+                return '<div class="jp-stat"><div class="jp-stat__label">' + i.label + '</div>' +
+                    '<div class="jp-stat__value">' + i.value + '<small>' + i.unit + '</small></div>' +
+                    (i.extra ? '<div style="margin-top:6px;font-size:12px;color:#8a9099">' + i.extra + '</div>' : '') +
+                    '</div>';
+            }).join('');
+            JP.ui.markDemo();
+        });
+
+        /* 最新动态 */
+        JP.api.get('news', { page: 1, size: 5, category: 'all' }).then(function (d) {
+            document.getElementById('jpNews').innerHTML = (d.list || []).map(function (n) {
+                return '<div class="jp-news-item" data-id="' + n.id + '">' +
+                    '<span class="jp-news-item__top">' + JP.ui.tag(n.categoryName) + '</span>' +
+                    '<span class="jp-news-item__title">' + JP.ui.esc(n.title) + '</span>' +
+                    '<span class="jp-news-item__meta">' + JP.ui.esc(n.publishTime || '') + '</span></div>';
+            }).join('');
+            document.getElementById('jpNews').addEventListener('click', function (e) {
+                var item = e.target.closest('.jp-news-item');
+                if (item) location.href = ROOT + 'pages/news/index.html';
+            });
+        });
+
+        /* 待办提醒 */
+        JP.api.get('todos').then(function (d) {
+            document.getElementById('jpTodos').innerHTML = (d.list || []).map(function (t) {
+                var color = t.level === '紧急' ? 'red' : (t.level === '提醒' ? 'orange' : 'gray');
+                return '<div style="padding:14px 4px;border-bottom:1px solid #f2f3f6">' +
+                    '<div style="display:flex;align-items:center;gap:8px">' + JP.ui.tag(t.type, 'green') + JP.ui.tag(t.level, color) +
+                    '<span style="margin-left:auto;font-size:12px;color:#8a9099">' + JP.ui.esc(t.time) + '</span></div>' +
+                    '<div style="margin-top:8px;font-size:14px;line-height:1.6;color:#333">' + JP.ui.esc(t.content) + '</div></div>';
+            }).join('');
+        });
+
+        /* 课表 */
+        JP.api.get('schedules', { page: 1, size: 5 }).then(function (d) {
+            var week = { 1: '周一', 2: '周二', 3: '周三', 4: '周四', 5: '周五', 6: '周六', 7: '周日' };
+            JP.ui.table(document.getElementById('jpSchedule'), {
+                columns: [
+                    { key: 'className', title: '班级' },
+                    { key: 'courseName', title: '课程' },
+                    { key: 'teacherName', title: '教师' },
+                    { key: 'weekday', title: '时间', render: function (r) { return week[r.weekday] + ' ' + r.lessonStart + '-' + r.lessonEnd; } },
+                    { key: 'classroom', title: '教室' }
+                ],
+                rows: d.list || []
+            });
+        });
+
+        /* 快捷入口 —— 按权限渲染 */
+        var quick = [
+            { name: '学生基本信息', icon: '🎓', path: 'pages/student/basic.html', perm: 'student:basic:list' },
+            { name: '学生考勤', icon: '🗓️', path: 'pages/student/attendance.html', perm: 'student:attendance:list' },
+            { name: '缴费管理', icon: '💰', path: 'pages/student/payment.html', perm: 'student:payment:list' },
+            { name: '新闻中心', icon: '📋', path: 'pages/news/index.html', perm: 'news:list' },
+            { name: '成绩查询', icon: '📊', path: 'pages/score/index.html', perm: 'score:list' },
+            { name: '课件资源', icon: '📁', path: 'pages/courseware/index.html', perm: 'courseware:list' },
+            { name: '用户管理', icon: '⚙️', path: 'pages/system/user.html', perm: 'system:user:list' },
+            { name: '个人中心', icon: '👤', path: 'pages/account/profile.html', perm: '' }
+        ];
+        document.getElementById('jpQuick').innerHTML = quick.filter(function (q) {
+            return !q.perm || JP.session.hasPerm(q.perm);
+        }).map(function (q) {
+            return '<a href="' + ROOT + q.path + '" style="display:flex;align-items:center;gap:10px;padding:14px 16px;border:1px solid #e9ebef;border-radius:6px;transition:all .15s" ' +
+                'onmouseover="this.style.borderColor=\'#9fd8cd\';this.style.background=\'#f7fdfc\'" ' +
+                'onmouseout="this.style.borderColor=\'#e9ebef\';this.style.background=\'#fff\'">' +
+                '<span style="font-size:20px">' + q.icon + '</span><span style="font-size:14px;color:#333">' + q.name + '</span></a>';
+        }).join('');
+    })();
+</script>
+</body>
+</html>

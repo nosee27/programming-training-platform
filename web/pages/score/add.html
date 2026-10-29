@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="score-add" data-perm="score:add" data-title="成绩录入">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>成绩录入 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-card">
+            <h2 class="jp-card__title">成绩录入</h2>
+            <div style="display:flex;flex-wrap:wrap;gap:12px;padding:18px 0 6px">
+                <select class="jp-select" id="fClass">
+                    <option value="Python 全栈 2603 班">Python 全栈 2603 班</option>
+                    <option value="算法竞赛 2601 班">算法竞赛 2601 班</option>
+                </select>
+                <select class="jp-select" id="fCourse">
+                    <option value="Python 全栈开发">Python 全栈开发</option>
+                    <option value="算法与程序设计竞赛">算法与程序设计竞赛</option>
+                </select>
+                <select class="jp-select" id="fType">
+                    <option value="1">阶段测验</option>
+                    <option value="2">期中</option>
+                    <option value="3">期末</option>
+                    <option value="4">作品评分</option>
+                </select>
+                <input class="jp-input" type="date" id="fDate">
+                <input class="jp-input" type="number" id="fFull" value="100" style="width:110px" title="满分">
+                <button class="jp-btn jp-btn--primary" type="button" id="btnLoad">加载学生名单</button>
+                <button class="jp-btn" type="button" id="btnSave">保存全部成绩</button>
+            </div>
+            <div id="jpTable"></div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    (function () {
+        var roster = [];
+        var tableEl = document.getElementById('jpTable');
+        document.getElementById('fDate').value = new Date().toISOString().slice(0, 10);
+
+        function render() {
+            if (!roster.length) {
+                tableEl.innerHTML = '<div class="jp-empty"><span class="jp-empty__icon">📋</span>请先选择班级并点击「加载学生名单」</div>';
+                return;
+            }
+            var html = '<div class="jp-table-wrap"><table class="jp-table"><thead><tr>' +
+                '<th>学号</th><th>姓名</th><th>状态</th><th style="width:180px">得分</th></tr></thead><tbody>';
+            roster.forEach(function (s, i) {
+                html += '<tr><td>' + JP.ui.esc(s.studentNo) + '</td><td>' + JP.ui.esc(s.name) + '</td>' +
+                    '<td>' + JP.ui.dictTag('studentStatus', s.status) + '</td>' +
+                    '<td><input class="jp-input" type="number" min="0" data-score="' + i +
+                    '" placeholder="输入得分" style="width:120px"></td></tr>';
+            });
+            html += '</tbody></table></div>' +
+                '<div style="margin-top:14px;font-size:13px;color:#8a9099">共 ' + roster.length +
+                ' 名在读学生，留空表示本次不录入该学生。</div>';
+            tableEl.innerHTML = html;
+        }
+
+        document.getElementById('btnLoad').addEventListener('click', function () {
+            var className = document.getElementById('fClass').value;
+            tableEl.innerHTML = '<div class="jp-loading">名单加载中…</div>';
+            JP.api.get('students', { className: className, page: 1, size: 100 }).then(function (d) {
+                roster = (d.list || []).filter(function (s) { return s.status === 1; });
+                render();
+                JP.ui.toast('已加载 ' + roster.length + ' 名在读学生', 'success');
+            }).catch(function (err) {
+                tableEl.innerHTML = '<div class="jp-empty">加载失败：' + JP.ui.esc(err.message) + '</div>';
+            });
+        });
+
+        document.getElementById('btnSave').addEventListener('click', function () {
+            if (!roster.length) { JP.ui.toast('请先加载学生名单', 'error'); return; }
+            var courseName = document.getElementById('fCourse').value;
+            var examType = document.getElementById('fType').value;
+            var examDate = document.getElementById('fDate').value;
+            var full = Number(document.getElementById('fFull').value || 100);
+            var items = [];
+            tableEl.querySelectorAll('[data-score]').forEach(function (input) {
+                if (input.value === '') return;
+                var v = Number(input.value);
+                if (v < 0 || v > full) { input.style.borderColor = '#e04b4b'; return; }
+                input.style.borderColor = '#d9dde3';
+                var s = roster[Number(input.getAttribute('data-score'))];
+                items.push({
+                    studentNo: s.studentNo, studentName: s.name, courseName: courseName,
+                    examType: examType, score: v, fullScore: full, examDate: examDate
+                });
+            });
+            if (!items.length) { JP.ui.toast('请至少录入一名学生的成绩，且得分不能超过满分', 'error'); return; }
+            JP.page.save({
+                url: '/scores/batch',
+                data: { items: items },
+                successText: '已录入 ' + items.length + ' 条成绩（同课程同类型自动覆盖）'
+            });
+        });
+    })();
+</script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="system-permission" data-perm="system:permission:list" data-title="权限管理">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>权限管理 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-card">
+            <h2 class="jp-card__title">权限管理</h2>
+            <div id="jpToolbar"></div>
+            <div id="jpTable"></div>
+            <div id="jpPager" class="jp-pager"></div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    var listApi = JP.page.list({
+        url: 'permissions',
+        size: 12,
+        searchPlaceholder: '搜索权限名称 / 编码',
+        filters: [
+            { key: 'type', options: [
+                { value: '', label: '全部类型' },
+                { value: '1', label: '目录' },
+                { value: '2', label: '菜单' },
+                { value: '3', label: '按钮' }
+            ] }
+        ],
+        toolbar: [
+            { text: '+ 新增权限', type: 'primary', perm: 'system:permission:add', onClick: function (ctx) {
+                JP.ui.formModal({
+                    title: '新增权限',
+                    fields: [
+                        { key: 'permissionName', label: '权限名称', required: true },
+                        { key: 'permissionCode', label: '权限编码', required: true, placeholder: '如 student:basic:export' },
+                        { key: 'type', label: '类型', type: 'select', options: [
+                            { value: '1', label: '目录' }, { value: '2', label: '菜单' }, { value: '3', label: '按钮' }
+                        ] },
+                        { key: 'parentName', label: '父级权限', placeholder: '如 学生管理' },
+                        { key: 'path', label: '页面路径', full: true, placeholder: '如 pages/student/basic.html' },
+                        { key: 'sortOrder', label: '排序', type: 'number' }
+                    ],
+                    onSubmit: function (data) {
+                        JP.page.save({
+                            url: '/permissions', data: data, successText: '权限已新增',
+                            onDone: function () { ctx.reload(); }
+                        });
+                    }
+                });
+            } }
+        ],
+        columns: [
+            { key: 'permissionName', title: '权限名称' },
+            { key: 'permissionCode', title: '权限编码', render: function (r) { return '<code style="font-size:13px;color:#0e9c86">' + JP.ui.esc(r.permissionCode) + '</code>'; } },
+            { key: 'type', title: '类型', render: function (r) { return JP.ui.dictTag('permType', r.type); } },
+            { key: 'parentName', title: '父级权限' },
+            { key: 'path', title: '页面路径', wrap: true, render: function (r) { return r.path === '-' ? '-' : '<code style="font-size:12px;color:#666">' + JP.ui.esc(r.path) + '</code>'; } },
+            { key: 'sortOrder', title: '排序', align: 'center' },
+            { key: 'status', title: '状态', render: function (r) { return JP.ui.dictTag('enableStatus', r.status); } }
+        ],
+        actions: [
+            { text: '编辑', perm: 'system:permission:edit', onClick: function (row) {
+                JP.ui.formModal({
+                    title: '编辑权限', values: row,
+                    fields: [
+                        { key: 'permissionName', label: '权限名称', required: true },
+                        { key: 'permissionCode', label: '权限编码', required: true },
+                        { key: 'type', label: '类型', type: 'select', options: [
+                            { value: '1', label: '目录' }, { value: '2', label: '菜单' }, { value: '3', label: '按钮' }
+                        ] },
+                        { key: 'parentName', label: '父级权限' },
+                        { key: 'path', label: '页面路径', full: true },
+                        { key: 'sortOrder', label: '排序', type: 'number' }
+                    ],
+                    onSubmit: function (data) {
+                        JP.page.save({
+                            url: '/permissions/' + row.id, method: 'PUT', data: data, successText: '权限已保存',
+                            onDone: function () { listApi.reload(); }
+                        });
+                    }
+                });
+            } },
+            { text: '删除', perm: 'system:permission:delete', onClick: function (row) {
+                JP.ui.confirm({
+                    title: '删除权限', message: '确定删除权限「' + row.permissionName + '」吗？删除后需要重新为角色授权。',
+                    onOk: function () {
+                        JP.page.save({
+                            url: '/permissions/' + row.id, method: 'DELETE', successText: '权限已删除',
+                            onDone: function () { listApi.reload(); }
+                        });
+                    }
+                });
+            } }
+        ]
+    });
+</script>
+</body>
+</html>

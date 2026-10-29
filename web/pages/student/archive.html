@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="student-archive" data-perm="student:archive:list" data-title="学生学习档案">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>学生学习档案 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-card">
+            <h2 class="jp-card__title">学生学习档案</h2>
+            <div id="jpToolbar"></div>
+            <div id="jpTable"></div>
+            <div id="jpPager" class="jp-pager"></div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    var listApi = JP.page.list({
+        url: 'archives',
+        searchPlaceholder: '搜索学号 / 姓名 / 阶段名称',
+        toolbar: [
+            { text: '+ 新增档案记录', type: 'primary', perm: 'student:archive:list', onClick: function (ctx) {
+                JP.ui.formModal({
+                    title: '新增学习档案记录',
+                    fields: [
+                        { key: 'studentNo', label: '学号', required: true },
+                        { key: 'courseName', label: '课程', required: true },
+                        { key: 'stageNo', label: '阶段序号', type: 'number', required: true },
+                        { key: 'stageName', label: '阶段名称', required: true, placeholder: '如 Python 进阶' },
+                        { key: 'studyHours', label: '累计课时', type: 'number' },
+                        { key: 'assessScore', label: '阶段测评分', type: 'number' },
+                        { key: 'abilityTags', label: '能力标签', full: true, placeholder: '如 循环/函数/调试' },
+                        { key: 'teacherComment', label: '教师评语', type: 'textarea', full: true },
+                        { key: 'archiveDate', label: '归档日期', type: 'date' }
+                    ],
+                    onSubmit: function (data) {
+                        JP.page.save({
+                            url: '/archives', data: data, successText: '档案记录已保存',
+                            onDone: function () { ctx.reload(); }
+                        });
+                    }
+                });
+            } }
+        ],
+        columns: [
+            { key: 'studentNo', title: '学号' },
+            { key: 'studentName', title: '姓名' },
+            { key: 'courseName', title: '课程' },
+            { key: 'stageName', title: '学习阶段', render: function (r) {
+                return '<span class="jp-tag">阶段 ' + r.stageNo + '</span> ' + JP.ui.esc(r.stageName);
+            } },
+            { key: 'studyHours', title: '累计课时', align: 'center' },
+            { key: 'assessScore', title: '阶段测评', align: 'center', render: function (r) {
+                if (r.assessScore === null || r.assessScore === undefined) return '-';
+                var color = r.assessScore >= 90 ? '#0e9c86' : (r.assessScore >= 80 ? '#333' : '#e08b2a');
+                return '<b style="color:' + color + '">' + r.assessScore + '</b>';
+            } },
+            { key: 'abilityTags', title: '能力标签', wrap: true },
+            { key: 'teacherComment', title: '教师评语', wrap: true },
+            { key: 'archiveDate', title: '归档日期' }
+        ],
+        actions: [
+            { text: '查看成长轨迹', onClick: function (row) {
+                JP.api.get('archives', { keyword: row.studentNo, page: 1, size: 20 }).then(function (d) {
+                    var timeline = (d.list || []).sort(function (a, b) { return a.stageNo - b.stageNo; }).map(function (a) {
+                        return '<div style="padding:12px 0;border-bottom:1px solid #f2f3f6">' +
+                            '<div style="display:flex;align-items:center;gap:8px">' +
+                            JP.ui.tag('阶段 ' + a.stageNo) + '<b>' + JP.ui.esc(a.stageName) + '</b>' +
+                            '<span style="margin-left:auto;font-size:13px;color:#0e9c86">测评 ' + (a.assessScore === null ? '-' : a.assessScore) + ' 分</span></div>' +
+                            '<div style="margin-top:6px;font-size:13px;color:#8a9099">累计课时 ' + a.studyHours + ' · 能力标签：' + JP.ui.esc(a.abilityTags || '-') + '</div>' +
+                            '<div style="margin-top:6px;font-size:13px;color:#555">教师评语：' + JP.ui.esc(a.teacherComment || '-') + '</div></div>';
+                    }).join('');
+                    JP.ui.modal({
+                        title: row.studentName + ' · 学习成长轨迹',
+                        body: timeline || '<div class="jp-empty">暂无档案记录</div>',
+                        buttons: [{ text: '关闭' }]
+                    });
+                });
+            } }
+        ]
+    });
+</script>
+</body>
+</html>

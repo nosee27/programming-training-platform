@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="course-list" data-perm="course:list" data-title="课程信息">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>课程信息 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-card">
+            <h2 class="jp-card__title">课程信息</h2>
+            <div id="jpToolbar"></div>
+            <div id="jpTable"></div>
+            <div id="jpPager" class="jp-pager"></div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    var listApi = JP.page.list({
+        url: 'courses',
+        searchPlaceholder: '搜索课程名称 / 编号 / 分类',
+        filters: [
+            { key: 'status', options: [
+                { value: '', label: '全部状态' },
+                { value: '1', label: '已上架' },
+                { value: '0', label: '已下架' }
+            ] }
+        ],
+        toolbar: [
+            { text: '+ 新增课程', type: 'primary', perm: 'course:add', onClick: function (ctx) {
+                JP.ui.formModal({
+                    title: '新增课程',
+                    values: { status: '1', credit: 4, totalHours: 80 },
+                    fields: [
+                        { key: 'courseCode', label: '课程编号', required: true, placeholder: '如 C2607' },
+                        { key: 'courseName', label: '课程名称', required: true },
+                        { key: 'category', label: '课程分类', placeholder: '如 Python / 算法竞赛' },
+                        { key: 'credit', label: '学分', type: 'number' },
+                        { key: 'totalHours', label: '总课时', type: 'number' },
+                        { key: 'price', label: '课程价格（元）', type: 'number' },
+                        { key: 'status', label: '状态', type: 'select', options: [
+                            { value: '1', label: '上架' }, { value: '0', label: '下架' }
+                        ] },
+                        { key: 'description', label: '课程简介', type: 'textarea', full: true }
+                    ],
+                    onSubmit: function (data) {
+                        JP.page.save({
+                            url: '/courses', data: data, successText: '课程已新增',
+                            onDone: function () { ctx.reload(); }
+                        });
+                    }
+                });
+            } }
+        ],
+        columns: [
+            { key: 'courseCode', title: '课程编号' },
+            { key: 'courseName', title: '课程名称' },
+            { key: 'category', title: '分类', render: function (r) { return JP.ui.tag(r.category); } },
+            { key: 'credit', title: '学分', align: 'center' },
+            { key: 'totalHours', title: '总课时', align: 'center' },
+            { key: 'price', title: '价格', render: function (r) { return JP.ui.money(r.price); } },
+            { key: 'clazzCount', title: '开设班级', align: 'center' },
+            { key: 'chapterCount', title: '大纲章节', align: 'center' },
+            { key: 'status', title: '状态', render: function (r) { return JP.ui.dictTag('courseStatus', r.status); } }
+        ],
+        actions: [
+            { text: '查看大纲', onClick: function (row) { location.href = 'chapter.html?course=' + encodeURIComponent(row.courseName); } },
+            { text: '编辑', perm: 'course:edit', onClick: function (row) {
+                JP.ui.formModal({
+                    title: '编辑课程', values: row,
+                    fields: [
+                        { key: 'courseCode', label: '课程编号', required: true },
+                        { key: 'courseName', label: '课程名称', required: true },
+                        { key: 'category', label: '课程分类' },
+                        { key: 'credit', label: '学分', type: 'number' },
+                        { key: 'totalHours', label: '总课时', type: 'number' },
+                        { key: 'price', label: '课程价格（元）', type: 'number' },
+                        { key: 'status', label: '状态', type: 'select', options: [
+                            { value: '1', label: '上架' }, { value: '0', label: '下架' }
+                        ] }
+                    ],
+                    onSubmit: function (data) {
+                        JP.page.save({
+                            url: '/courses/' + row.id, method: 'PUT', data: data, successText: '课程已保存',
+                            onDone: function () { listApi.reload(); }
+                        });
+                    }
+                });
+            } },
+            { text: '删除', perm: 'course:delete', onClick: function (row) {
+                JP.ui.confirm({
+                    title: '删除课程', message: '确定删除课程「' + row.courseName + '」吗？',
+                    onOk: function () {
+                        JP.page.save({
+                            url: '/courses/' + row.id, method: 'DELETE', successText: '课程已删除',
+                            onDone: function () { listApi.reload(); }
+                        });
+                    }
+                });
+            } }
+        ]
+    });
+</script>
+</body>
+</html>

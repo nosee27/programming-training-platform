@@ -1,0 +1,328 @@
+/* =====================================================================
+   布局样式：顶部 Header + 深色可折叠侧边栏 + 主内容区
+   ===================================================================== */
+
+.jp-layout {
+    min-height: 100vh;
+    padding-top: var(--header-h);
+    padding-left: var(--sidebar-w);
+    transition: padding-left .2s ease;
+}
+.jp-layout.is-collapsed { padding-left: var(--sidebar-w-collapsed); }
+
+/* ---------------- 顶部 Header（青绿实心条） ---------------- */
+.jp-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    height: var(--header-h);
+    display: flex;
+    align-items: center;
+    padding: 0 20px 0 0;
+    background: var(--brand);
+    color: #fff;
+}
+
+.jp-logo {
+    width: var(--sidebar-w);
+    height: var(--header-h);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #fff;
+    transition: width .2s ease;
+}
+.jp-logo__mark {
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: #fff;
+    background: var(--brand);
+    border-radius: 6px;
+}
+.jp-logo__text {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #1b6fb8;
+    white-space: nowrap;
+}
+.jp-layout.is-collapsed .jp-logo { width: var(--sidebar-w-collapsed); }
+.jp-layout.is-collapsed .jp-logo__text { display: none; }
+
+.jp-hamburger {
+    width: 46px;
+    height: 46px;
+    margin-left: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+.jp-hamburger span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: #fff;
+    border-radius: 1px;
+    transition: transform .2s;
+}
+.jp-hamburger:hover span { background: #eafffb; }
+
+.jp-header__right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 22px;
+}
+.jp-header__entry {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: #fff;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+}
+.jp-header__entry:hover { text-decoration: underline; }
+
+/* 右上角个人中心下拉 */
+.jp-user {
+    position: relative;
+}
+.jp-user__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #fff;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+}
+.jp-user__avatar {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--brand);
+    background: #fff;
+    border-radius: 50%;
+    overflow: hidden;
+}
+.jp-user__menu {
+    position: absolute;
+    top: 44px;
+    right: 0;
+    min-width: 150px;
+    padding: 6px 0;
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .14);
+    display: none;
+}
+.jp-user__menu.is-open { display: block; }
+.jp-user__menu button {
+    display: block;
+    width: 100%;
+    padding: 9px 16px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text);
+    text-align: left;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+.jp-user__menu button:hover { color: var(--brand); background: var(--brand-light); }
+
+/* ---------------- 侧边栏（深灰蓝 + 独立滚动） ---------------- */
+.jp-sidebar {
+    position: fixed;
+    top: var(--header-h);
+    left: 0;
+    bottom: 0;
+    z-index: 900;
+    width: var(--sidebar-w);
+    display: flex;
+    flex-direction: column;
+    background: var(--sidebar-bg);
+    overflow-x: hidden;
+    overflow-y: auto;
+    transition: width .2s ease;
+}
+.jp-layout.is-collapsed .jp-sidebar { width: var(--sidebar-w-collapsed); }
+
+/* 用户区：昵称 + 到期时间 + 会员权益按钮 */
+.jp-side-user {
+    padding: 18px 12px 16px;
+    text-align: center;
+    border-bottom: 1px solid var(--sidebar-line);
+}
+.jp-side-user__name {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-size: 17px;
+    font-weight: 700;
+    color: #fff;
+}
+.jp-side-user__crown { font-size: 15px; }
+.jp-side-user__expire {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #9aa0a6;
+}
+.jp-side-user__expire .renew {
+    color: var(--vip-from);
+    cursor: pointer;
+}
+.jp-side-user__expire .renew:hover { text-decoration: underline; }
+.jp-side-user__vip {
+    width: 100%;
+    height: 32px;
+    margin-top: 12px;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 600;
+    color: var(--vip-text);
+    background: linear-gradient(180deg, var(--vip-from), var(--vip-to));
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+}
+.jp-side-user__vip:hover { filter: brightness(1.04); }
+.jp-layout.is-collapsed .jp-side-user__name,
+.jp-layout.is-collapsed .jp-side-user__expire,
+.jp-layout.is-collapsed .jp-side-user__vip { display: none; }
+
+/* 菜单 */
+.jp-menu { padding: 4px 0 24px; }
+.jp-menu__item { position: relative; }
+.jp-menu__link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 52px;
+    padding: 0 18px;
+    font-size: 15px;
+    color: var(--sidebar-text);
+    cursor: pointer;
+    user-select: none;
+}
+.jp-menu__link:hover { background: var(--sidebar-hover); }
+.jp-menu__icon { width: 20px; text-align: center; font-size: 16px; flex: none; }
+.jp-menu__arrow {
+    margin-left: auto;
+    font-size: 10px;
+    color: #8d939c;
+    transition: transform .2s;
+}
+.jp-menu__item.is-open > .jp-menu__link .jp-menu__arrow { transform: rotate(180deg); }
+
+/* 选中态：青绿实心 */
+.jp-menu__item.is-active > .jp-menu__link,
+.jp-menu__child.is-active > .jp-menu__link {
+    color: #fff;
+    font-weight: 600;
+    background: var(--sidebar-active);
+}
+
+/* 二级菜单：缩进、无图标、略小 */
+.jp-menu__sub { display: none; }
+.jp-menu__item.is-open > .jp-menu__sub { display: block; }
+.jp-menu__child > .jp-menu__link {
+    height: 48px;
+    padding-left: 48px;
+    font-size: 14px;
+    color: var(--sidebar-sub);
+}
+.jp-layout.is-collapsed .jp-menu__sub { display: none !important; }
+.jp-layout.is-collapsed .jp-menu__link { padding: 0; justify-content: center; }
+.jp-layout.is-collapsed .jp-menu__text,
+.jp-layout.is-collapsed .jp-menu__arrow { display: none; }
+
+/* ---------------- 主内容区 ---------------- */
+.jp-main {
+    padding: 20px;
+    min-height: calc(100vh - var(--header-h));
+}
+.jp-card {
+    padding: 20px 24px 24px;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+}
+.jp-card + .jp-card { margin-top: 16px; }
+
+/* 卡片标题：左侧青色竖条 */
+.jp-card__title {
+    position: relative;
+    padding-left: 12px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+}
+.jp-card__title::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 20px;
+    background: var(--brand);
+    border-radius: 2px;
+}
+
+/* 面包屑 / 页面副标题 */
+.jp-breadcrumb {
+    margin-bottom: 14px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* 数据概览小卡 */
+.jp-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+}
+.jp-stat {
+    padding: 16px 18px;
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+}
+.jp-stat__label { font-size: 13px; color: var(--text-muted); }
+.jp-stat__value { margin-top: 8px; font-size: 24px; font-weight: 700; color: var(--brand); }
+.jp-stat__value small { font-size: 13px; font-weight: 400; color: var(--text-muted); margin-left: 4px; }
+
+/* ---------------- 移动端适配 ---------------- */
+@media (max-width: 900px) {
+    .jp-layout { padding-left: 0; }
+    .jp-sidebar { width: var(--sidebar-w); transform: translateX(-100%); }
+    .jp-layout.is-collapsed { padding-left: 0; }
+    .jp-layout.is-collapsed .jp-sidebar { width: var(--sidebar-w); transform: translateX(0); }
+    .jp-logo { width: auto; padding: 0 14px; }
+    .jp-header { padding-right: 12px; }
+    .jp-main { padding: 12px; }
+}

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="coming-soon" data-perm="" data-title="功能建设中">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>功能建设中 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-card" style="text-align:center;padding:56px 24px">
+            <div style="font-size:52px">🚧</div>
+            <h2 class="jp-card__title" style="display:inline-block;margin-top:16px;padding-left:0" id="jpModuleName">功能建设中</h2>
+            <p style="color:#8a9099;margin:16px 0 10px" id="jpSubsystemName"></p>
+            <p style="color:#666;line-height:1.9;max-width:660px;margin:0 auto">
+                该入口属于<b>父系统下的子系统</b>。当前迭代聚焦「系统管理、学生管理、教师管理、新闻中心」四大模块，
+                其余模块已完成菜单、权限、路由与数据表设计，页面将在后续迭代补齐。
+            </p>
+            <div style="margin-top:26px;display:flex;justify-content:center;gap:12px">
+                <a class="jp-btn jp-btn--primary" href="../dashboard/index.html">返回工作台</a>
+                <button class="jp-btn" type="button" id="jpBack">返回上一页</button>
+            </div>
+        </div>
+
+        <div class="jp-card">
+            <h2 class="jp-card__title">该模块的规划内容</h2>
+            <div id="jpPlan" style="padding-top:14px"></div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    (function () {
+        var params = new URLSearchParams(location.search);
+        var moduleName = params.get('m') || '功能建设中';
+        var subKey = params.get('sub') || localStorage.getItem('jp_subsystem') || 'teach';
+        var sub = (window.JP_SUBSYSTEMS || []).filter(function (s) { return s.key === subKey; })[0];
+
+        document.getElementById('jpModuleName').textContent = '「' + moduleName + '」建设中';
+        document.getElementById('jpSubsystemName').textContent = sub ? ('所属子系统：' + sub.icon + ' ' + sub.name) : '';
+        document.title = moduleName + '（建设中） - 编程培训平台管理平台';
+
+        var plans = {
+            '代码编辑器': ['在线代码编辑与语法高亮', '一键运行 Python / JavaScript 代码', '与课程知识点关联的示例代码'],
+            '我的项目': ['按课程归档的学生项目', '提交记录与版本管理', '教师在线点评'],
+            '运行记录': ['代码运行历史与耗时统计', '错误信息回溯', '常用代码片段收藏'],
+            '考试列表': ['阶段测评与模拟赛安排', '在线作答与自动判分', '成绩自动写入成绩表'],
+            '我的成绩': ['历次测评成绩趋势', '知识点掌握度分析', '成绩单导出'],
+            '错题本': ['自动收集错题', '按知识点分类复习', '相似题推荐'],
+            '题目列表': ['按课程 / 知识点 / 难度筛选', '在线判题', '题解与讨论'],
+            '每日一练': ['每日定时推送练习', '连续打卡统计', '练习报告'],
+            '培训课程': ['教师继续教育课程', '在线学习与作业', '培训证书'],
+            '学时记录': ['学时累计与明细', '年度学时达标提醒'],
+            '商品列表': ['教具与课程周边展示', '按分类筛选'],
+            '购物车': ['加入购物车与下单', '订单结算'],
+            '订单列表': ['报名订单查询与筛选', '订单状态流转（待支付 / 已支付 / 已退款）'],
+            '退款申请': ['发起退款并上传凭证', '退款进度跟踪'],
+            '课件列表': ['课件上传、下载与预览', '按课程与分类归档'],
+            '课件分类': ['课件分类维护', '分类下课件数量统计'],
+            '课程信息': ['课程增删改查', '课程上下架', '价格与课时维护'],
+            '课程大纲': ['章 / 节树形维护', '知识点与课时分配'],
+            '班级信息': ['开班 / 结班管理', '班主任与教室分配'],
+            '班级成员': ['班级名单维护', '学员调班'],
+            '课表管理': ['周课表维护与冲突校验', '教室占用检查'],
+            '成绩录入': ['按班级批量录入成绩', '自动计算平均分与排名'],
+            '成绩查询': ['多条件查询与导出', '成绩单打印'],
+            '成绩统计': ['分数段分布', '班级排名与及格率分析']
+        };
+
+        document.getElementById('jpPlan').innerHTML =
+            '<ul style="line-height:2.2;color:#666;font-size:14px">' +
+            (plans[moduleName] || ['该模块的功能清单正在整理中']).map(function (t) {
+                return '<li>· ' + JP.ui.esc(t) + '</li>';
+            }).join('') + '</ul>' +
+            '<div style="margin-top:12px;font-size:12px;color:#8a9099">对应数据表已建好（见 sql/01-schema.sql），后端接口将在第 4 轮统一实现。</div>';
+
+        document.getElementById('jpBack').addEventListener('click', function () {
+            if (history.length > 1) history.back();
+            else location.href = '../dashboard/index.html';
+        });
+    })();
+</script>
+</body>
+</html>

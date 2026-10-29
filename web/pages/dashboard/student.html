@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="stu-home" data-perm="news:list" data-title="我的主页">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>我的主页 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-stats" id="jpStats"></div>
+        <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px">
+            <div class="jp-card">
+                <h2 class="jp-card__title">我的课表</h2>
+                <div id="jpSchedule"></div>
+            </div>
+            <div class="jp-card">
+                <h2 class="jp-card__title">最新公告</h2>
+                <div class="jp-news-list" id="jpNews"></div>
+            </div>
+        </div>
+        <div class="jp-card">
+            <h2 class="jp-card__title">我的成绩</h2>
+            <div id="jpScores"></div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    (function () {
+        var user = JP.session.user || {};
+
+        /* 数据全部来自「按当前账号收窄」后的接口：学生只能拿到自己的记录 */
+        function safe(url, params) {
+            /* 单个接口没有权限（403）时退化为空列表，不影响整页 */
+            return JP.api.get(url, params).catch(function () { return { list: [], total: 0 }; });
+        }
+        Promise.all([
+            safe('attendances', { page: 1, size: 100 }),
+            safe('scores', { page: 1, size: 100 }),
+            safe('works', { page: 1, size: 100 }),
+            safe('schedules', { page: 1, size: 100 })
+        ]).then(function (res) {
+            var att = res[0].list || [];
+            var scores = res[1].list || [];
+            var works = res[2].list || [];
+            var schedules = res[3].list || [];
+
+            var normal = att.filter(function (a) { return a.attendType === 1; }).length;
+            var rate = att.length ? Math.round(normal / att.length * 1000) / 10 : 0;
+            var avg = scores.length
+                ? Math.round(scores.reduce(function (s, x) { return s + Number(x.score) / Number(x.fullScore) * 100; }, 0) / scores.length * 10) / 10
+                : 0;
+            var pending = works.filter(function (w) { return w.score === null || w.score === undefined; }).length;
+
+            document.getElementById('jpStats').innerHTML = [
+                { label: '我的出勤率', value: rate, unit: '%', extra: '考勤记录 ' + att.length + ' 条' },
+                { label: '我的平均分', value: avg, unit: '分', extra: '成绩记录 ' + scores.length + ' 条' },
+                { label: '我的作品', value: works.length, unit: '件', extra: pending ? pending + ' 件待点评' : '全部已点评' },
+                { label: '我的班级', value: (user.className || '--'), unit: '', extra: '学员：' + (user.name || '') }
+            ].map(function (i) {
+                return '<div class="jp-stat"><div class="jp-stat__label">' + i.label + '</div>' +
+                    '<div class="jp-stat__value">' + i.value + (i.unit ? '<small>' + i.unit + '</small>' : '') + '</div>' +
+                    (i.extra ? '<div style="margin-top:6px;font-size:12px;color:#8a9099">' + JP.ui.esc(i.extra) + '</div>' : '') + '</div>';
+            }).join('');
+
+            var week = { 1: '周一', 2: '周二', 3: '周三', 4: '周四', 5: '周五', 6: '周六', 7: '周日' };
+            JP.ui.table('#jpSchedule', {
+                columns: [
+                    { key: 'courseName', title: '课程' },
+                    { key: 'teacherName', title: '教师' },
+                    { key: 'weekday', title: '上课时间', render: function (r) {
+                        return JP.ui.tag(week[r.weekday]) + ' ' + r.lessonStart + ' - ' + r.lessonEnd;
+                    } },
+                    { key: 'classroom', title: '教室' }
+                ],
+                rows: schedules.slice(0, 6),
+                empty: '暂无排课，请联系班主任'
+            });
+
+            setTimeout(function () {
+                JP.ui.table('#jpScores', {
+                    columns: [
+                        { key: 'courseName', title: '课程' },
+                        { key: 'examType', title: '考试类型', render: function (r) { return JP.ui.tag(JP.ui.dictText('examType', r.examType)); } },
+                        { key: 'score', title: '得分', align: 'center', render: function (r) {
+                            return '<b>' + Number(r.score).toFixed(1) + '</b><span style="color:#b0b6bd"> / ' + r.fullScore + '</span>';
+                        } },
+                        { key: 'examDate', title: '考核日期' },
+                        { key: 'teacherName', title: '录入教师' }
+                    ],
+                    rows: scores,
+                    empty: '暂无成绩记录'
+                });
+            }, 0);
+
+            JP.ui.markDemo();
+        }).catch(function (err) {
+            JP.ui.toast('加载失败：' + err.message, 'error');
+        });
+
+        JP.api.get('news', { page: 1, size: 5, category: 'all' }).then(function (d) {
+            document.getElementById('jpNews').innerHTML = (d.list || []).map(function (n) {
+                return '<div class="jp-news-item" onclick="location.href=\'../news/index.html\'">' +
+                    '<span class="jp-news-item__top">' + JP.ui.tag(n.categoryName) + '</span>' +
+                    '<span class="jp-news-item__title">' + JP.ui.esc(n.title) + '</span>' +
+                    '<span class="jp-news-item__meta">' + JP.ui.esc((n.publishTime || '').slice(5, 10)) + '</span></div>';
+            }).join('');
+        });
+    })();
+</script>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="teacher-basic" data-perm="teacher:list" data-title="教师基本信息">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>教师基本信息 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-card">
+            <h2 class="jp-card__title">教师基本信息</h2>
+            <div id="jpToolbar"></div>
+            <div id="jpTable"></div>
+            <div id="jpPager" class="jp-pager"></div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    function teacherForm(row, ctx) {
+        JP.ui.formModal({
+            title: row ? '编辑教师' : '新增教师',
+            values: row || { gender: '1', status: '1' },
+            fields: [
+                { key: 'teacherNo', label: '教师工号', required: !row, placeholder: '如 T1007' },
+                { key: 'name', label: '姓名', required: true },
+                { key: 'gender', label: '性别', type: 'select', options: [{ value: '1', label: '男' }, { value: '2', label: '女' }] },
+                { key: 'title', label: '职称', placeholder: '如 高级讲师' },
+                { key: 'majorDirection', label: '擅长方向', placeholder: '如 Python / 算法竞赛' },
+                { key: 'education', label: '学历', type: 'select', options: [
+                    { value: '本科', label: '本科' }, { value: '硕士', label: '硕士' }, { value: '博士', label: '博士' }
+                ] },
+                { key: 'phone', label: '联系电话' },
+                { key: 'entryDate', label: '入职日期', type: 'date' },
+                { key: 'status', label: '状态', type: 'select', options: [{ value: '1', label: '在职' }, { value: '0', label: '离职' }] },
+                { key: 'intro', label: '教师简介', type: 'textarea', full: true }
+            ],
+            onSubmit: function (data) {
+                JP.page.save({
+                    url: row ? '/teachers/' + row.id : '/teachers',
+                    method: row ? 'PUT' : 'POST',
+                    data: data,
+                    successText: row ? '教师信息已保存' : '教师已新增',
+                    onDone: function () {
+                        if (ctx && ctx.reload) ctx.reload();
+                        else if (listApi) listApi.reload();
+                    }
+                });
+            }
+        });
+    }
+
+    JP.page.list({
+        url: 'teachers',
+        searchPlaceholder: '搜索工号 / 姓名 / 擅长方向',
+        filters: [
+            { key: 'status', options: [
+                { value: '', label: '全部状态' },
+                { value: '1', label: '在职' },
+                { value: '0', label: '离职' }
+            ] }
+        ],
+        toolbar: [
+            { text: '+ 新增教师', type: 'primary', perm: 'teacher:add', onClick: function (ctx) { teacherForm(null, ctx); } }
+        ],
+        columns: [
+            { key: 'teacherNo', title: '工号' },
+            { key: 'name', title: '姓名' },
+            { key: 'gender', title: '性别', render: function (r) { return JP.ui.dictText('gender', r.gender); } },
+            { key: 'title', title: '职称' },
+            { key: 'majorDirection', title: '擅长方向' },
+            { key: 'education', title: '学历' },
+            { key: 'phone', title: '联系电话' },
+            { key: 'classNames', title: '带班情况', wrap: true },
+            { key: 'status', title: '状态', render: function (r) {
+                return JP.ui.tag(r.status === 1 ? '在职' : '离职', r.status === 1 ? 'green' : 'gray');
+            } }
+        ],
+        actions: [
+            { text: '查看', onClick: function (row) {
+                JP.ui.detail('教师详情 · ' + row.name, [
+                    ['工号', JP.ui.esc(row.teacherNo)],
+                    ['姓名', JP.ui.esc(row.name) + '（' + JP.ui.dictText('gender', row.gender) + '）'],
+                    ['职称', JP.ui.esc(row.title || '-')],
+                    ['擅长方向', JP.ui.esc(row.majorDirection || '-')],
+                    ['学历', JP.ui.esc(row.education || '-')],
+                    ['联系电话', JP.ui.esc(row.phone || '-')],
+                    ['入职日期', JP.ui.esc(row.entryDate || '-')],
+                    ['带班情况', JP.ui.esc(row.classNames || '-')],
+                    ['状态', JP.ui.tag(row.status === 1 ? '在职' : '离职', row.status === 1 ? 'green' : 'gray')]
+                ], '<div class="jp-section-title" style="margin-top:18px">关联入口</div>' +
+                    '<div style="line-height:2;font-size:13px;color:#666">授课安排见「教师管理 / 授课安排」，教学评分见「教师管理 / 教学评价」。</div>');
+            } },
+            { text: '编辑', perm: 'teacher:edit', onClick: function (row) { teacherForm(row); } },
+            { text: '删除', perm: 'teacher:delete', onClick: function (row) {
+                JP.ui.confirm({
+                    title: '删除教师', message: '确定删除教师「' + row.name + '」吗？该教师关联的授课安排也将失效。',
+                    onOk: function () {
+                        JP.page.save({
+                            url: '/teachers/' + row.id, method: 'DELETE', successText: '教师已删除',
+                            onDone: function () { listApi.reload(); }
+                        });
+                    }
+                });
+            } }
+        ]
+    });
+</script>
+</body>
+</html>

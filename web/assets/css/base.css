@@ -1,0 +1,269 @@
+/* =====================================================================
+   编程培训平台管理平台 —— 基础样式（变量 / 重置 / 通用组件）
+   颜色与尺寸依据参考图提取，详见 docs/01-功能模块与三层架构.md「UI 规范速记」
+   ===================================================================== */
+
+:root {
+    /* 品牌色：顶部 Header 与侧边栏选中态 */
+    --brand: #0e9c86;
+    --brand-dark: #0b8371;
+    --brand-light: #e7f6f3;
+    --brand-border: #9fd8cd;
+
+    /* 侧边栏（深灰蓝） */
+    --sidebar-bg: #2b2f38;
+    --sidebar-hover: #363b46;
+    --sidebar-active: #12a08a;
+    --sidebar-text: #d5d8dd;
+    --sidebar-sub: #c8ccd2;
+    --sidebar-line: #3a3f4a;
+
+    /* 内容区 */
+    --page-bg: #eef0f3;
+    --card-bg: #ffffff;
+    --text: #333333;
+    --text-sub: #666666;
+    --text-muted: #8a9099;
+    --line: #e9ebef;
+
+    /* 状态色 */
+    --danger: #e04b4b;
+    --warning: #f0a02a;
+    --success: #12a08a;
+    --info: #4a90e2;
+
+    /* 会员权益按钮（橙黄渐变胶囊） */
+    --vip-from: #f7b545;
+    --vip-to: #f0942c;
+    --vip-text: #5a3a12;
+
+    --radius: 4px;
+    --shadow-card: 0 1px 4px rgba(0, 0, 0, .06);
+    --sidebar-w: 260px;
+    --sidebar-w-collapsed: 64px;
+    --header-h: 60px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+body {
+    font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--page-bg);
+    -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+ul, ol { margin: 0; padding: 0; list-style: none; }
+h1, h2, h3, h4 { margin: 0; font-weight: 600; }
+
+/* ---------- 滚动条（侧边栏独立滚动，与参考图一致） ---------- */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #c2c6cc; border-radius: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- 按钮 ---------- */
+.jp-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 16px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text-sub);
+    background: #fff;
+    border: 1px solid #d9dde3;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+}
+.jp-btn:hover { color: var(--brand); border-color: var(--brand-border); }
+.jp-btn--primary {
+    color: #fff;
+    background: var(--brand);
+    border-color: var(--brand);
+}
+.jp-btn--primary:hover { color: #fff; background: var(--brand-dark); border-color: var(--brand-dark); }
+.jp-btn--danger { color: var(--danger); border-color: #f0c2c2; }
+.jp-btn--danger:hover { color: #fff; background: var(--danger); border-color: var(--danger); }
+.jp-btn--text {
+    height: auto;
+    padding: 0 4px;
+    color: var(--brand);
+    background: none;
+    border: none;
+}
+.jp-btn--text:hover { color: var(--brand-dark); text-decoration: underline; }
+.jp-btn--sm { height: 28px; padding: 0 10px; font-size: 13px; }
+.jp-btn[disabled] { opacity: .5; cursor: not-allowed; }
+
+/* ---------- 表单控件 ---------- */
+.jp-input, .jp-select, .jp-textarea {
+    height: 34px;
+    padding: 0 10px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text);
+    background: #fff;
+    border: 1px solid #d9dde3;
+    border-radius: var(--radius);
+    outline: none;
+    transition: border-color .15s;
+}
+.jp-textarea { height: auto; padding: 8px 10px; resize: vertical; line-height: 1.6; }
+.jp-input:focus, .jp-select:focus, .jp-textarea:focus { border-color: var(--brand); }
+.jp-input::placeholder { color: #b6bcc4; }
+.jp-select { cursor: pointer; }
+
+.jp-field { margin-bottom: 16px; }
+.jp-field__label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: var(--text-sub);
+}
+.jp-field__label .req { color: var(--danger); margin-left: 2px; }
+.jp-field .jp-input, .jp-field .jp-select, .jp-field .jp-textarea { width: 100%; }
+
+/* ---------- 标签 / 徽标 ---------- */
+.jp-tag {
+    display: inline-flex;
+    align-items: center;
+    height: 24px;
+    padding: 0 8px;
+    font-size: 13px;
+    color: var(--brand);
+    background: #f0faf8;
+    border: 1px solid var(--brand-border);
+    border-radius: var(--radius);
+    white-space: nowrap;
+}
+.jp-tag--gray { color: #7c828b; background: #f5f6f8; border-color: #e2e5ea; }
+.jp-tag--orange { color: #c47c14; background: #fff8ec; border-color: #f5d5a3; }
+.jp-tag--red { color: var(--danger); background: #fdf3f3; border-color: #f2c4c4; }
+.jp-tag--blue { color: #3a76c4; background: #f2f7fd; border-color: #bcd6f2; }
+
+.jp-badge {
+    display: inline-block;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    font-size: 12px;
+    line-height: 18px;
+    text-align: center;
+    color: #fff;
+    background: var(--danger);
+    border-radius: 9px;
+}
+
+/* ---------- 空状态 / 加载 ---------- */
+.jp-empty {
+    padding: 60px 0;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+.jp-empty__icon { font-size: 34px; display: block; margin-bottom: 10px; opacity: .5; }
+.jp-loading { padding: 40px 0; text-align: center; color: var(--text-muted); }
+
+/* ---------- 轻提示 ---------- */
+.jp-toast-wrap {
+    position: fixed;
+    top: 76px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+}
+.jp-toast {
+    padding: 9px 18px;
+    font-size: 14px;
+    color: #fff;
+    background: rgba(0, 0, 0, .78);
+    border-radius: var(--radius);
+    animation: jp-toast-in .2s ease-out;
+}
+.jp-toast--success { background: rgba(18, 160, 138, .95); }
+.jp-toast--error { background: rgba(224, 75, 75, .95); }
+@keyframes jp-toast-in {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- 弹窗 ---------- */
+.jp-modal-mask {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 10vh;
+    background: rgba(0, 0, 0, .45);
+}
+.jp-modal {
+    width: 520px;
+    max-width: calc(100vw - 32px);
+    max-height: 76vh;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-radius: 6px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, .18);
+    animation: jp-modal-in .18s ease-out;
+}
+.jp-modal--wide { width: 720px; }
+@keyframes jp-modal-in {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.jp-modal__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    font-size: 16px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--line);
+}
+.jp-modal__close {
+    width: 26px;
+    height: 26px;
+    font-size: 18px;
+    line-height: 1;
+    color: var(--text-muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+.jp-modal__close:hover { color: var(--text); }
+.jp-modal__body { padding: 20px; overflow-y: auto; }
+.jp-modal__foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 20px;
+    border-top: 1px solid var(--line);
+}
+
+/* ---------- 详情描述列表 ---------- */
+.jp-desc { display: grid; grid-template-columns: 120px 1fr; row-gap: 12px; }
+.jp-desc__k { color: var(--text-muted); }
+.jp-desc__v { color: var(--text); word-break: break-all; }
+
+/* ---------- 表单栅格（弹窗内两列） ---------- */
+.jp-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+.jp-grid2 .jp-field--full { grid-column: 1 / -1; }

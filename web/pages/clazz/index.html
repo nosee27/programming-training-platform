@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="clazz-list" data-perm="clazz:list" data-title="班级信息">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>班级信息 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-card">
+            <h2 class="jp-card__title">班级信息</h2>
+            <div id="jpToolbar"></div>
+            <div id="jpTable"></div>
+            <div id="jpPager" class="jp-pager"></div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    var listApi = JP.page.list({
+        url: 'classes',
+        searchPlaceholder: '搜索班级名称 / 编号 / 班主任',
+        filters: [
+            { key: 'status', options: [
+                { value: '', label: '全部状态' },
+                { value: '0', label: '未开班' },
+                { value: '1', label: '在读' },
+                { value: '2', label: '已结业' }
+            ] }
+        ],
+        toolbar: [
+            { text: '+ 新增班级', type: 'primary', perm: 'clazz:add', onClick: function (ctx) {
+                JP.ui.formModal({
+                    title: '新增班级',
+                    values: { capacity: 30, status: '0' },
+                    fields: [
+                        { key: 'classCode', label: '班级编号', required: true, placeholder: '如 P2605' },
+                        { key: 'className', label: '班级名称', required: true },
+                        { key: 'courseName', label: '所属课程', required: true },
+                        { key: 'headTeacherName', label: '班主任' },
+                        { key: 'classroom', label: '教室' },
+                        { key: 'capacity', label: '计划人数', type: 'number' },
+                        { key: 'startDate', label: '开班日期', type: 'date' },
+                        { key: 'endDate', label: '结课日期', type: 'date' },
+                        { key: 'status', label: '状态', type: 'select', options: [
+                            { value: '0', label: '未开班' }, { value: '1', label: '在读' }, { value: '2', label: '已结业' }
+                        ] },
+                        { key: 'remark', label: '备注', full: true }
+                    ],
+                    onSubmit: function (data) {
+                        JP.page.save({
+                            url: '/classes', data: data, successText: '班级已新增',
+                            onDone: function () { ctx.reload(); }
+                        });
+                    }
+                });
+            } }
+        ],
+        columns: [
+            { key: 'classCode', title: '班级编号' },
+            { key: 'className', title: '班级名称' },
+            { key: 'courseName', title: '所属课程' },
+            { key: 'headTeacherName', title: '班主任' },
+            { key: 'classroom', title: '教室' },
+            { key: 'startDate', title: '开班日期' },
+            { key: 'endDate', title: '结课日期' },
+            { key: 'capacity', title: '计划人数', align: 'center' },
+            { key: 'studentCount', title: '在读 / 计划', align: 'center', render: function (r) {
+                var full = r.studentCount >= r.capacity;
+                return '<span style="color:' + (full ? '#e04b4b' : '#333') + '">' + r.studentCount + '</span> / ' + r.capacity;
+            } },
+            { key: 'status', title: '状态', render: function (r) { return JP.ui.dictTag('clazzStatus', r.status); } }
+        ],
+        actions: [
+            { text: '班级成员', onClick: function (row) { location.href = 'member.html?class=' + encodeURIComponent(row.className); } },
+            { text: '查看课表', onClick: function (row) { location.href = 'schedule.html?class=' + encodeURIComponent(row.className); } },
+            { text: '编辑', perm: 'clazz:edit', onClick: function (row) {
+                JP.ui.formModal({
+                    title: '编辑班级', values: row,
+                    fields: [
+                        { key: 'className', label: '班级名称', required: true },
+                        { key: 'headTeacherName', label: '班主任' },
+                        { key: 'classroom', label: '教室' },
+                        { key: 'capacity', label: '计划人数', type: 'number' },
+                        { key: 'startDate', label: '开班日期', type: 'date' },
+                        { key: 'endDate', label: '结课日期', type: 'date' },
+                        { key: 'status', label: '状态', type: 'select', options: [
+                            { value: '0', label: '未开班' }, { value: '1', label: '在读' }, { value: '2', label: '已结业' }
+                        ] },
+                        { key: 'remark', label: '备注', full: true }
+                    ],
+                    onSubmit: function (data) {
+                        JP.page.save({
+                            url: '/classes/' + row.id, method: 'PUT', data: data, successText: '班级已保存',
+                            onDone: function () { listApi.reload(); }
+                        });
+                    }
+                });
+            } }
+        ]
+    });
+</script>
+</body>
+</html>

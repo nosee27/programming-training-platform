@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="../../" data-page="score-list" data-perm="score:list" data-title="成绩查询 / 导出">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>成绩查询 - 编程培训平台管理平台</title>
+    <script src="../../assets/js/auth-guard.js"></script>
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/layout.css">
+    <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+<div class="jp-layout">
+    <header class="jp-header" id="jpHeader"></header>
+    <aside class="jp-sidebar" id="jpSidebar"></aside>
+    <main class="jp-main">
+        <div class="jp-card">
+            <h2 class="jp-card__title">成绩查询 / 导出</h2>
+            <div id="jpToolbar"></div>
+            <div id="jpTable"></div>
+            <div id="jpPager" class="jp-pager"></div>
+        </div>
+    </main>
+</div>
+
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/mock-data.js"></script>
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/components.js"></script>
+<script src="../../assets/js/layout.js"></script>
+<script src="../../assets/js/page-list.js"></script>
+<script>
+    var listApi = JP.page.list({
+        url: 'scores',
+        searchPlaceholder: '搜索学号 / 姓名 / 课程',
+        filters: [
+            { key: 'examType', options: [
+                { value: '', label: '全部考试类型' },
+                { value: '1', label: '阶段测验' },
+                { value: '2', label: '期中' },
+                { value: '3', label: '期末' },
+                { value: '4', label: '作品评分' }
+            ] }
+        ],
+        toolbar: [
+            { text: '+ 录入成绩', type: 'primary', perm: 'score:add', onClick: function () { location.href = 'add.html'; } },
+            { text: '导出成绩', perm: 'score:export', onClick: function () { JP.ui.toast('演示模式：导出任务已创建'); } },
+            { text: '成绩单打印', perm: 'score:export', onClick: function () { JP.ui.toast('演示模式：批量打印待迭代补充'); } }
+        ],
+        columns: [
+            { key: 'studentNo', title: '学号' },
+            { key: 'studentName', title: '姓名' },
+            { key: 'className', title: '班级' },
+            { key: 'courseName', title: '课程' },
+            { key: 'examType', title: '考试类型', render: function (r) { return JP.ui.tag(JP.ui.dictText('examType', r.examType)); } },
+            { key: 'score', title: '得分', align: 'center', render: function (r) {
+                var rate = Number(r.score) / Number(r.fullScore);
+                var color = rate >= 0.9 ? '#0e9c86' : (rate >= 0.6 ? '#333' : '#e04b4b');
+                return '<b style="color:' + color + '">' + Number(r.score).toFixed(1) + '</b><span style="color:#b0b6bd"> / ' + r.fullScore + '</span>';
+            } },
+            { key: 'examDate', title: '考核日期' },
+            { key: 'teacherName', title: '录入教师' },
+            { key: 'remark', title: '备注', wrap: true }
+        ],
+        actions: [
+            { text: '编辑', perm: 'score:edit', onClick: function (row) {
+                JP.ui.formModal({
+                    title: '修改成绩 · ' + row.studentName,
+                    values: row,
+                    fields: [
+                        { key: 'score', label: '得分', type: 'number', required: true },
+                        { key: 'fullScore', label: '满分', type: 'number', required: true },
+                        { key: 'examDate', label: '考核日期', type: 'date' },
+                        { key: 'remark', label: '备注', full: true }
+                    ],
+                    onSubmit: function (data) {
+                        JP.page.save({
+                            url: '/scores/' + row.id, method: 'PUT', data: data, successText: '成绩已修改',
+                            onDone: function () { listApi.reload(); }
+                        });
+                    }
+                });
+            } },
+            { text: '删除', perm: 'score:delete', onClick: function (row) {
+                JP.ui.confirm({
+                    title: '删除成绩', message: '确定删除「' + row.studentName + '」的这条成绩记录吗？',
+                    onOk: function () {
+                        JP.page.save({
+                            url: '/scores/' + row.id, method: 'DELETE', successText: '成绩已删除',
+                            onDone: function () { listApi.reload(); }
+                        });
+                    }
+                });
+            } }
+        ]
+    });
+</script>
+</body>
+</html>

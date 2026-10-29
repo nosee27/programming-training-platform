@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-root="" data-page="index">
+<head>
+    <meta charset="UTF-8">
+    <title>编程培训平台管理平台</title>
+    <script>
+        /* 入口页：统一跳转到登录页，登录后由 login.html 进入工作台 */
+        location.replace(localStorage.getItem('jp_token') ? 'pages/dashboard/index.html' : 'login.html');
+    </script>
+</head>
+<body>
+<noscript>请开启 JavaScript 后访问本平台。</noscript>
+</body>
+</html>

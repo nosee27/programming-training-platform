@@ -1,0 +1,21 @@
+{
+  "name": "programming-training-platform-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "编程培训平台管理平台 —— 后端服务（Express 三层架构：routes / services / dao）",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node --watch app.js",
+    "hash": "node scripts/hash-password.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
+    "mysql2": "^3.11.3"
+  }
+}
